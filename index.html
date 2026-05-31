@@ -2739,6 +2739,10 @@ document.querySelectorAll('.tab').forEach(tab=>{
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('view-'+tab.dataset.view).classList.add('active');
+    // Rafraîchir les données admin quand on revient dans Corps professoral
+    if(tab.dataset.view === 'profs' && userRole === 'admin'){
+      chargerAdminSection().catch(console.error);
+    }
   };
 });
 
@@ -3032,6 +3036,16 @@ async function chargerProfProfil(){
     const { data, error } = await sb.from('prof_profiles').select('*').eq('user_id', currentUser.id).single();
     if(error) throw error;
     profProfil = data;
+    // Auto-lier le user_id dans profs_roster si pas encore fait
+    if(profProfil?.email_cours){
+      const { data: rEntry } = await sb.from('profs_roster')
+        .select('id, user_id')
+        .ilike('email', profProfil.email_cours)
+        .maybeSingle();
+      if(rEntry && !rEntry.user_id){
+        await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
+      }
+    }
   } catch(e){ profProfil = null; }
 }
 
