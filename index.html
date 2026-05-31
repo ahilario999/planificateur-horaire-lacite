@@ -3348,18 +3348,23 @@ async function chargerStatutsProfs(){
   profStatuts = {};
   if(!sb || !currentUser) return;
   try {
-    const [{ data: demandes }, { data: dispos }] = await Promise.all([
+    const [{ data: demandes }, { data: dispos }, { data: profiles }] = await Promise.all([
       sb.from('cours_demandes').select('prof_user_id').eq('statut','en_attente'),
-      sb.from('disponibilites').select('prof_user_id')
+      sb.from('disponibilites').select('prof_user_id'),
+      sb.from('prof_profiles').select('user_id,email_cours')
     ]);
     const userIdsAvecDemande = new Set((demandes||[]).map(d=>d.prof_user_id));
     const userIdsAvecDispo   = new Set((dispos||[]).map(d=>d.prof_user_id));
-    // Utilise rosterProfs (déjà chargé) pour le mapping email → user_id
+    // Fallback : si profs_roster.user_id est NULL, chercher dans prof_profiles par email
+    const emailToUserId = {};
+    (profiles||[]).forEach(p=>{ if(p.email_cours) emailToUserId[p.email_cours.toLowerCase()] = p.user_id; });
     (rosterProfs||[]).forEach(r=>{
       if(!r.email) return;
-      profStatuts[r.email.toLowerCase()] = {
-        hasPendingRequest: r.user_id && userIdsAvecDemande.has(r.user_id),
-        hasDispo: r.user_id && userIdsAvecDispo.has(r.user_id)
+      const emailLc = r.email.toLowerCase();
+      const uid = r.user_id || emailToUserId[emailLc];
+      profStatuts[emailLc] = {
+        hasPendingRequest: uid ? userIdsAvecDemande.has(uid) : false,
+        hasDispo: uid ? userIdsAvecDispo.has(uid) : false
       };
     });
   } catch(e){ console.warn('[chargerStatutsProfs]', e); }
@@ -3379,10 +3384,22 @@ async function renderAdminDemandes(){
   if(!el) return;
 
   let demandes = [];
+  let profMap  = {};
   try {
-    const { data } = await sb.from('cours_demandes').select('*, prof_profiles(nom,prenom,email_cours)').order('created_at',{ascending:false});
+    const { data, error } = await sb.from('cours_demandes')
+      .select('*').order('created_at',{ascending:false});
+    if(error) throw error;
     demandes = data || [];
-  } catch(e){}
+    // Charger les profils séparément — pas de FK dans le schema cache Supabase
+    if(demandes.length > 0){
+      const ids = [...new Set(demandes.map(d=>d.prof_user_id).filter(Boolean))];
+      if(ids.length > 0){
+        const { data: profiles } = await sb.from('prof_profiles')
+          .select('user_id,nom,prenom,email_cours').in('user_id', ids);
+        (profiles||[]).forEach(p => profMap[p.user_id] = p);
+      }
+    }
+  } catch(e){ console.warn('[renderAdminDemandes]', e); }
 
   const enAttente = demandes.filter(d=>d.statut==='en_attente').length;
   if(badge){ badge.textContent=enAttente; badge.style.display=enAttente>0?'inline-flex':'none'; }
@@ -3398,8 +3415,8 @@ async function renderAdminDemandes(){
 
   let html = '';
   demandes.forEach(d=>{
-    const p = d.prof_profiles;
-    const pNom = p ? esc((p.prenom+' '+p.nom).trim()) : 'Prof inconnu';
+    const p = profMap[d.prof_user_id];
+    const pNom = p ? esc((p.prenom+' '+p.nom).trim()||p.email_cours) : '(profil non lié)';
     const badge = d.statut==='en_attente' ? '<span class="statut-badge en_attente">⏳ En attente</span>'
                 : d.statut==='accepte'    ? '<span class="statut-badge accepte">✅ Accepté</span>'
                 :                           '<span class="statut-badge refuse">❌ Refusé</span>';
