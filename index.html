@@ -280,6 +280,7 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
 
 /* Formulaire */
 .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-section-title{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-light); margin:20px 0 10px; border-bottom:1px solid var(--border); padding-bottom:6px; }
 .field{ display:flex; flex-direction:column; gap:6px; }
 .field.full{ grid-column:1 / -1; }
 .field label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text-light); }
@@ -1755,8 +1756,16 @@ function openRosterModal(rosterId){
   const editing = rosterId != null;
   const r = editing ? rosterProfs.find(x=>x.id===rosterId) : { prenom:'', nom:'', email:'', telephone:'', numero_employe:'', statut:'contractuel', actif:true, notes:'' };
   if(editing && !r) return;
+
+  // Trouver le prof local pour les données horaire
+  const profLocal = editing ? PROFS.find(p=> p.courriel && r.email && p.courriel.toLowerCase()===r.email.toLowerCase()) : null;
+  _dispoTemp  = new Set(profLocal ? (profLocal.dispos  || []) : []);
+  _qualifTemp = new Set(profLocal ? (profLocal.qualifications || []) : []);
+
   const body =
     '<div class="form-error" id="formErr"></div>'+
+    // ── Section 1 : Info administrative ──
+    '<div class="form-section-title">Informations</div>'+
     '<div class="form-grid">'+
     '<div class="field"><label>Prénom</label><input id="r-prenom" value="'+esc(r.prenom||'')+'"></div>'+
     '<div class="field"><label>Nom</label><input id="r-nom" value="'+esc(r.nom||'')+'"></div>'+
@@ -1776,7 +1785,17 @@ function openRosterModal(rosterId){
     '</select></div>'+
     '<div class="field full"><label>Notes <span class="hint">(internes, non visibles par le prof)</span></label>'+
     '<textarea id="r-notes" rows="2" style="width:100%;resize:vertical;">'+esc(r.notes||'')+'</textarea></div>'+
-    '</div>';
+    '</div>'+
+    // ── Section 2 : Disponibilités ──
+    '<div class="form-section-title">Disponibilités <span class="hint">(cliquez les demi-journées disponibles)</span></div>'+
+    '<div class="form-grid"><div class="field full">'+buildDispoGrid()+'</div></div>'+
+    // ── Section 3 : Cours assignés ──
+    '<div class="form-section-title">Cours assignés dans l\'horaire</div>'+
+    buildEnseignes(profLocal ? profLocal.id : null)+
+    // ── Section 4 : Qualifications ──
+    '<div class="form-section-title">Cours que ce prof PEUT enseigner <span class="hint">(qualifications pour le générateur)</span></div>'+
+    buildQualifList(profLocal ? profLocal.id : null);
+
   const foot =
     (editing ? '<button class="btn btn-danger foot-left" onclick="supprimerRosterEntry('+rosterId+')">Supprimer</button>' : '')+
     '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>'+
@@ -1785,14 +1804,16 @@ function openRosterModal(rosterId){
 }
 
 async function enregistrerRosterEntry(rosterId){
-  const prenom        = document.getElementById('r-prenom')?.value.trim() || '';
-  const nom           = document.getElementById('r-nom')?.value.trim() || '';
-  const email         = document.getElementById('r-email')?.value.trim() || '';
-  const telephone     = document.getElementById('r-tel')?.value.trim() || '';
-  const numero_employe= document.getElementById('r-employe')?.value.trim() || '';
-  const statut        = document.getElementById('r-statut')?.value || 'contractuel';
-  const actif         = document.getElementById('r-actif')?.value === 'true';
-  const notes         = document.getElementById('r-notes')?.value.trim() || '';
+  const prenom         = document.getElementById('r-prenom')?.value.trim() || '';
+  const nom            = document.getElementById('r-nom')?.value.trim() || '';
+  const email          = document.getElementById('r-email')?.value.trim() || '';
+  const telephone      = document.getElementById('r-tel')?.value.trim() || '';
+  const numero_employe = document.getElementById('r-employe')?.value.trim() || '';
+  const statut         = document.getElementById('r-statut')?.value || 'contractuel';
+  const actif          = document.getElementById('r-actif')?.value === 'true';
+  const notes          = document.getElementById('r-notes')?.value.trim() || '';
+  const qualifications = Array.from(document.querySelectorAll('#modalBody .q-check'))
+    .filter(cb => cb.checked).map(cb => cb.dataset.num);
 
   if(!prenom && !nom){ const e=document.getElementById('formErr'); e.textContent='Indiquez au moins un prénom ou un nom.'; e.classList.add('show'); return; }
   if(!email){ const e=document.getElementById('formErr'); e.textContent='Le courriel est obligatoire.'; e.classList.add('show'); return; }
@@ -1807,10 +1828,14 @@ async function enregistrerRosterEntry(rosterId){
       const { error } = await sb.from('profs_roster').insert(payload);
       if(error) throw error;
     }
-    // Sync avec PROFS local pour l'horaire
+    // Sync avec PROFS local (dispos, qualifications, infos de base)
     const profLocal = PROFS.find(p=> p.courriel && p.courriel.toLowerCase()===email.toLowerCase());
-    if(profLocal){ Object.assign(profLocal, { prenom, nom, telephone }); }
-    else if(rosterId==null){ PROFS.push({ id: nextProfId(), prenom, nom, courriel: email, telephone, statut: statut==='temps_plein'?'permanent':'contractuel', dispos:[], qualifications:[] }); }
+    const localStatut = statut==='temps_plein' ? 'permanent' : 'contractuel';
+    if(profLocal){
+      Object.assign(profLocal, { prenom, nom, telephone, statut: localStatut, dispos: Array.from(_dispoTemp), qualifications });
+    } else if(rosterId==null){
+      PROFS.push({ id: nextProfId(), prenom, nom, courriel: email, telephone, statut: localStatut, dispos: Array.from(_dispoTemp), qualifications });
+    }
     closeModal();
     await chargerRoster();
     renderProfs();
