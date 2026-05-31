@@ -1,0 +1,2663 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planificateur d'horaire — Design graphique (La Cité)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root{
+  --primary:#2D5F4C; --primary-light:#3D7A62; --primary-dark:#1D4F3C;
+  --accent:#4CAF50; --bg:#F2F4F7; --card-bg:#FFFFFF;
+  --text-primary:#1A1A1A; --text-secondary:#6B7280; --text-light:#9CA3AF;
+  --border:#E5E7EB;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06);
+  --shadow:0 4px 16px rgba(0,0,0,.08);
+  --shadow-lg:0 16px 40px rgba(0,0,0,.12);
+  --shadow-hover:0 20px 50px rgba(0,0,0,.16);
+  --transition:all .3s cubic-bezier(.4,0,.2,1);
+  /* couleurs par local */
+  --loc-d2050:#366e58; --loc-d2060:#694966; --loc-enligne:#d5a021; --loc-comodal:#e3655b;
+}
+[data-theme="dark"]{
+  --primary:#366e58; --primary-light:#4a8c72; --primary-dark:#2a5443;
+  --accent:#4CAF50; --bg:#0e0e10; --card-bg:#1a1a1e;
+  --text-primary:#f0f0f0; --text-secondary:#a0a0b0; --text-light:#555568;
+  --border:#2a2a32;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.4);
+  --shadow:0 4px 16px rgba(0,0,0,.5);
+  --shadow-lg:0 16px 40px rgba(0,0,0,.6);
+  --shadow-hover:0 20px 50px rgba(0,0,0,.7);
+}
+*{ transition:background-color .35s ease,border-color .35s ease,color .2s ease,box-shadow .3s ease; }
+
+body{
+  font-family:'Space Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--bg); color:var(--text-primary);
+  line-height:1.6; font-size:15px;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+
+#gridCanvas{ position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:.5; }
+.container{ position:relative; z-index:1; max-width:1400px; margin:0 auto; padding:40px 24px; }
+
+/* Header */
+.header{ margin-bottom:32px; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.header h1{ font-size:32px; font-weight:700; letter-spacing:-.02em; margin-bottom:8px; }
+.header p{ font-size:15px; color:var(--text-secondary); }
+
+/* Bascule thème */
+.theme-toggle{ display:flex; align-items:center; gap:10px; cursor:pointer; padding:8px 16px;
+  background:var(--card-bg); border:1px solid var(--border); border-radius:50px;
+  box-shadow:var(--shadow-sm); transition:var(--transition); user-select:none; flex-shrink:0; margin-top:4px; }
+.theme-toggle:hover{ border-color:var(--primary); box-shadow:var(--shadow); }
+.theme-toggle-icon{ display:flex; transition:transform .4s ease; }
+.theme-toggle:hover .theme-toggle-icon{ transform:rotate(20deg); }
+.theme-toggle-label{ font-size:13px; font-weight:600; color:var(--text-secondary); }
+.toggle-track{ width:36px; height:20px; background:var(--border); border-radius:20px; position:relative; }
+.toggle-track.active{ background:var(--primary); }
+.toggle-thumb{ width:14px; height:14px; background:#fff; border-radius:50%; position:absolute; top:3px; left:3px;
+  transition:transform .3s cubic-bezier(.4,0,.2,1); box-shadow:0 1px 4px rgba(0,0,0,.3); }
+.toggle-track.active .toggle-thumb{ transform:translateX(16px); }
+
+/* Barre de contrôles */
+.controls{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
+.control-group{ display:flex; flex-direction:column; gap:6px; }
+.control-group label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-light); }
+.select{ padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:var(--card-bg);
+  color:var(--text-primary); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; box-shadow:var(--shadow-sm); }
+.select:hover{ border-color:var(--primary); }
+.data-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.save-status-group{ justify-content:flex-end; }
+.save-status{ display:inline-flex; align-items:center; height:38px; color:var(--text-light); }
+
+/* Onglets */
+.tabs{ display:flex; gap:8px; margin-bottom:24px; padding:4px; background:var(--card-bg); border-radius:12px; box-shadow:var(--shadow-sm); }
+.tab{ flex:1; padding:12px 20px; background:transparent; border:none; font-family:inherit; font-weight:500; font-size:14px;
+  cursor:pointer; color:var(--text-secondary); border-radius:8px; transition:all .2s ease; }
+.tab:hover{ color:var(--text-primary); background:var(--bg); }
+.tab.active{ color:#fff; background:var(--primary); }
+.tab-content{ display:none; }
+.tab-content.active{ display:block; animation:slideUp .4s cubic-bezier(.4,0,.2,1) both; }
+
+/* Puces d'étape */
+.etape-chips{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.chip{ padding:8px 18px; border:2px solid var(--border); border-radius:50px; background:var(--card-bg);
+  font-family:inherit; font-weight:600; font-size:13px; color:var(--text-secondary); cursor:pointer; transition:all .2s ease; }
+.chip:hover{ border-color:var(--primary); color:var(--text-primary); transform:translateY(-1px); }
+.chip.active{ background:var(--primary); color:#fff; border-color:var(--primary); }
+
+/* Carte */
+.card{ background:var(--card-bg); padding:24px; border-radius:20px; box-shadow:var(--shadow);
+  border:1px solid var(--border); position:relative; overflow:hidden; margin-bottom:24px; }
+
+/* Grille d'horaire (calendrier) */
+.schedule-wrap{ overflow-x:auto; }
+.schedule-title{ font-size:18px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+.schedule-title .badge-etape{ background:var(--primary); color:#fff; font-size:13px; padding:3px 12px; border-radius:50px; }
+.sched-block{ margin-bottom:32px; }
+.sched-block:last-child{ margin-bottom:0; }
+.schedule{ display:grid; grid-template-columns:64px repeat(5,minmax(150px,1fr)); grid-auto-rows:58px;
+  min-width:880px; border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--card-bg); }
+.sch-head{ background:var(--bg); font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.04em;
+  color:var(--text-secondary); display:flex; align-items:center; justify-content:center; border-bottom:1px solid var(--border); }
+.sch-corner{ background:var(--bg); border-bottom:1px solid var(--border); border-right:1px solid var(--border); }
+.sch-time{ font-size:12px; color:var(--text-light); display:flex; align-items:flex-start; justify-content:flex-end;
+  padding:4px 8px 0 0; border-right:1px solid var(--border); border-bottom:1px solid var(--border); font-variant-numeric:tabular-nums; }
+.sch-cell{ border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
+.sch-cell:nth-child(6n){ } /* dernière colonne */
+.course-block{ margin:3px; border-radius:10px; padding:8px 11px; color:#fff; overflow:hidden; cursor:default;
+  display:flex; flex-direction:column; gap:3px; box-shadow:0 2px 6px rgba(0,0,0,.18); transition:all .2s ease; position:relative; }
+.course-block:hover{ transform:translateY(-2px) scale(1.01); box-shadow:0 8px 20px rgba(0,0,0,.28); z-index:5; }
+.cb-code{ font-size:10px; font-weight:600; opacity:.85; letter-spacing:.03em; }
+.cb-name{ font-size:16px; font-weight:700; line-height:1.15; }
+.cb-prof{ font-size:22px; font-weight:600; line-height:1.1; opacity:.95; margin-top:8px; }
+.cb-heure{ font-size:16px; font-weight:700; line-height:1.1; margin-top:auto; }
+.cb-local{ font-size:12px; font-weight:600; line-height:1.1; opacity:.95; }
+
+/* Conflits (étape 6) */
+.conflits-banner{ background:rgba(227,101,91,.12); border:1px solid #e3655b; border-left:5px solid #e3655b;
+  border-radius:14px; padding:15px 20px; margin:0 0 20px; animation:slideUp .4s cubic-bezier(.4,0,.2,1) both; }
+.conflits-banner h4{ margin:0 0 10px; color:#e3655b; display:flex; align-items:center; gap:9px; font-size:1.02rem; font-weight:700; }
+.conflits-banner ul{ margin:0; padding-left:22px; }
+.conflits-banner li{ margin:4px 0; font-size:.92rem; line-height:1.4; }
+.conflits-banner li b{ color:#e3655b; }
+.conflits-ok{ background:rgba(54,110,88,.12); border:1px solid var(--accent); border-left:5px solid var(--accent);
+  border-radius:14px; padding:13px 20px; margin:0 0 20px; color:var(--accent); font-weight:600;
+  display:flex; align-items:center; gap:9px; animation:slideUp .4s both; }
+.course-block.conflit{ outline:3px solid #e3655b; outline-offset:-2px;
+  box-shadow:0 0 0 2px rgba(227,101,91,.45), 0 0 16px rgba(227,101,91,.55); }
+.course-block.conflit::after{ content:'⚠'; position:absolute; top:3px; right:5px; font-size:.85rem;
+  text-shadow:0 1px 2px rgba(0,0,0,.5); }
+tr.conflit-row{ background:rgba(227,101,91,.1) !important; }
+tr.conflit-row td:first-child{ position:relative; }
+tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weight:700; }
+
+/* Cours enseignés (lecture seule) + qualifications (à cocher) */
+.enseignes-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px; }
+.enseignes-list li{ font-size:.88rem; padding:6px 10px; background:var(--surface-2,rgba(0,0,0,.04));
+  border:1px solid var(--border); border-radius:9px; }
+.badge-etape.mini{ font-size:9px; padding:1px 6px; margin-right:4px; }
+.qualif-empty{ font-size:.85rem; color:var(--text-light); margin:2px 0; font-style:italic; }
+/* Historique des versions */
+.versions-list{ display:flex; flex-direction:column; gap:8px; max-height:55vh; overflow-y:auto; }
+.version-item{ display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:10px 14px; background:var(--surface-2,rgba(0,0,0,.04));
+  border:1px solid var(--border); border-radius:11px; }
+.version-info{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.version-date{ font-weight:600; font-size:.92rem; }
+.version-label{ font-size:.85rem; color:var(--accent-gold,#d5a021); font-weight:600; }
+.version-meta{ font-size:.78rem; color:var(--text-light); }
+.version-actions{ display:flex; gap:6px; flex-shrink:0; }
+.qualif-list{ max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:2px;
+  border:1px solid var(--border); border-radius:10px; padding:8px; }
+.qualif-item{ display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:8px;
+  cursor:pointer; font-size:.9rem; transition:background .15s ease; }
+.qualif-item:hover{ background:rgba(54,110,88,.1); }
+/* Spécificité renforcée pour neutraliser la règle globale « .field input{ width:100% } » */
+.qualif-item input[type="checkbox"]{ flex:0 0 18px; width:18px; height:18px; min-width:18px;
+  margin:0; padding:0; border-radius:5px; background:none; accent-color:var(--accent); cursor:pointer; }
+.qualif-item .q-label{ flex:1 1 auto; min-width:0; text-align:left; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; }
+.qualif-item.taught{ background:rgba(54,110,88,.08); }
+.qualif-item.taught .q-label{ font-weight:600; }
+.taught-badge{ flex:0 0 auto; font-size:.7rem; font-weight:700; color:var(--accent);
+  border:1px solid var(--accent); border-radius:6px; padding:2px 7px; white-space:nowrap; }
+
+/* Vue complète : 3 étapes côte à côte (variante compacte) */
+.schedule-all{ display:flex; gap:14px; align-items:flex-start; min-width:960px; }
+.schedule-all .sched-block{ flex:1 1 0; min-width:0; margin-bottom:0; }
+.compact .schedule-title{ font-size:13px; margin-bottom:10px; }
+.compact .schedule-title .badge-etape{ font-size:11px; padding:2px 9px; }
+.compact .schedule{ min-width:0; grid-template-columns:30px repeat(5,minmax(0,1fr)); grid-auto-rows:46px; }
+.compact .sch-head{ font-size:9px; }
+.compact .sch-time{ font-size:9px; padding:2px 3px 0 0; }
+.compact .course-block{ margin:2px; padding:4px 5px; gap:1px; border-radius:6px; }
+.compact .cb-code{ font-size:8px; }
+.compact .cb-name{ font-size:11px; line-height:1.05; }
+.compact .cb-prof{ font-size:12px; margin-top:3px; line-height:1; }
+.compact .cb-heure{ font-size:10px; }
+.compact .cb-local{ font-size:9px; }
+
+
+/* Vue disponibilité des locaux : D2050 + D2060 côte à côte */
+.rooms-view{ display:flex; gap:14px; align-items:flex-start; min-width:760px; }
+.rooms-view.single-room{ max-width:980px; min-width:880px; }
+.rooms-view .room-block{ flex:1 1 0; min-width:0; margin-bottom:0; }
+.rooms-view.single-room .room-block{ flex:0 0 100%; }
+.room-summary{ display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
+.room-summary-item{ padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:var(--bg); font-size:12px; color:var(--text-secondary); }
+.room-summary-item b{ color:var(--text-primary); }
+.room-free-note{ margin-top:12px; font-size:12px; color:var(--text-light); }
+.room-block .course-block{ cursor:pointer; }
+.room-block .cb-name{ font-size:13px; }
+.room-block .cb-prof{ font-size:14px; margin-top:4px; }
+.room-block .cb-heure{ font-size:12px; }
+.room-block .cb-local{ font-size:11px; }
+
+/* Légende */
+.legend{ display:flex; gap:18px; flex-wrap:wrap; margin-top:18px; }
+.legend-item{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-secondary); }
+.legend-dot{ width:14px; height:14px; border-radius:4px; flex-shrink:0; }
+
+/* Table liste */
+.liste-title{ font-size:22px; font-weight:700; letter-spacing:-.01em; margin-bottom:20px; }
+.table-container{ background:var(--card-bg); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:24px; }
+.table-container:last-child{ margin-bottom:0; }
+.table-header{ padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.table-header h3{ font-size:16px; font-weight:600; display:flex; align-items:center; gap:10px; }
+.badge-etape{ background:var(--primary); color:#fff; font-size:13px; padding:3px 12px; border-radius:50px; font-weight:600; }
+.liste-count{ font-size:13px; font-weight:500; color:var(--text-light); }
+.search-input{ padding:9px 14px; border:1px solid var(--border); border-radius:10px; background:var(--bg);
+  color:var(--text-primary); font-family:inherit; font-size:14px; min-width:220px; }
+.search-input:focus{ outline:none; border-color:var(--primary); }
+.data-table{ width:100%; border-collapse:collapse; }
+.data-table th{ background:var(--bg); padding:12px 16px; text-align:left; font-weight:600; font-size:12px;
+  color:var(--text-secondary); text-transform:uppercase; letter-spacing:.04em; cursor:pointer; user-select:none; white-space:nowrap; }
+.data-table th:hover{ filter:brightness(.97); }
+.data-table th::after{ content:' ↕'; opacity:.3; font-size:11px; }
+.data-table th.sorted-asc::after{ content:' ↑'; opacity:1; }
+.data-table th.sorted-desc::after{ content:' ↓'; opacity:1; }
+.data-table td{ padding:13px 16px; border-bottom:1px solid var(--border); font-size:14px; }
+.data-table tr:last-child td{ border-bottom:none; }
+.data-table tbody tr:hover{ background:var(--bg); }
+.pill{ display:inline-block; padding:3px 10px; border-radius:6px; font-size:12px; font-weight:600; color:#fff; }
+.email-link{ color:var(--primary-light); text-decoration:none; }
+.email-link:hover{ text-decoration:underline; }
+.muted{ color:var(--text-light); font-style:italic; }
+.etape-sep td{ background:var(--bg); font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-secondary); }
+
+/* En-tête de vue (titre + bouton) */
+.liste-head-row{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+.liste-head-row .liste-title{ margin-bottom:0; }
+.table-tools{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+/* Boutons */
+.btn{ font-family:inherit; font-weight:600; font-size:14px; padding:10px 18px; border-radius:10px;
+  border:1px solid var(--border); background:var(--card-bg); color:var(--text-primary); cursor:pointer; transition:var(--transition); }
+.btn:hover{ border-color:var(--primary); transform:translateY(-1px); box-shadow:var(--shadow-sm); }
+.btn-primary{ background:var(--primary); color:#fff; border-color:var(--primary); }
+.btn-primary:hover{ background:var(--primary-light); border-color:var(--primary-light); }
+.btn-danger{ background:var(--loc-comodal); color:#fff; border-color:var(--loc-comodal); }
+.btn-danger:hover{ filter:brightness(1.05); }
+.btn-ghost{ background:transparent; }
+.btn-sm{ padding:8px 13px; font-size:13px; }
+
+/* Cellule actions dans les tables */
+.th-actions{ cursor:default !important; text-align:center; }
+.th-actions::after{ content:'' !important; }
+.td-actions{ white-space:nowrap; text-align:center; }
+.icon-btn{ background:transparent; border:1px solid var(--border); border-radius:8px; cursor:pointer;
+  font-size:14px; padding:5px 9px; margin:0 2px; transition:all .15s ease; color:var(--text-secondary); }
+.icon-btn:hover{ border-color:var(--primary); color:var(--primary); background:var(--bg); }
+.icon-btn-danger:hover{ border-color:var(--loc-comodal); color:var(--loc-comodal); }
+.icon-btn-lock{ border-color:var(--loc-enligne); color:var(--loc-enligne); background:rgba(213,160,33,.1); }
+
+/* Modale */
+.modal-overlay{ position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.5); backdrop-filter:blur(3px);
+  display:none; align-items:flex-start; justify-content:center; padding:48px 16px; overflow-y:auto; }
+.modal-overlay.open{ display:flex; animation:fadeIn .2s ease; }
+.modal{ background:var(--card-bg); border:1px solid var(--border); border-radius:20px; box-shadow:var(--shadow-lg);
+  width:100%; max-width:560px; animation:slideUp .3s cubic-bezier(.4,0,.2,1) both; }
+.modal-head{ display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--border); }
+.modal-head h3{ font-size:18px; font-weight:700; }
+.modal-close{ background:transparent; border:none; font-size:18px; cursor:pointer; color:var(--text-secondary);
+  width:32px; height:32px; border-radius:8px; transition:all .15s ease; }
+.modal-close:hover{ background:var(--bg); color:var(--text-primary); }
+.modal-body{ padding:24px; }
+.modal-foot{ padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
+.modal-foot .foot-left{ margin-right:auto; }
+
+/* Formulaire */
+.form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.field{ display:flex; flex-direction:column; gap:6px; }
+.field.full{ grid-column:1 / -1; }
+.field label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text-light); }
+.field input, .field select{ padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--bg);
+  color:var(--text-primary); font-family:inherit; font-size:14px; width:100%; }
+.field input:focus, .field select:focus{ outline:none; border-color:var(--primary); }
+.field .hint{ font-size:11px; color:var(--text-light); }
+.form-error{ color:var(--loc-comodal); font-size:13px; font-weight:600; margin-bottom:12px; display:none; }
+.form-error.show{ display:block; }
+
+/* Grille de disponibilités (5 jours × 3 demi-journées) */
+.dispo-grid{ display:grid; grid-template-columns:auto repeat(5,1fr); gap:6px; margin-top:4px;
+  padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:12px; }
+.dispo-corner{}
+.dispo-head{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+  text-align:center; color:var(--text-secondary); padding:2px 0; }
+.dispo-rowlabel{ font-size:11px; font-weight:600; color:var(--text-secondary);
+  display:flex; align-items:center; justify-content:flex-end; padding-right:8px; white-space:nowrap; }
+.dispo-cell{ height:32px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg);
+  cursor:pointer; transition:all .15s ease; }
+.dispo-cell:hover{ border-color:var(--primary); transform:translateY(-1px); }
+.dispo-cell.sel{ background:var(--accent); border-color:var(--accent);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.25); }
+.dispo-cell.sel::after{ content:'✓'; color:#fff; font-size:13px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; height:100%; }
+
+@keyframes slideUp{ from{opacity:0; transform:translateY(30px);} to{opacity:1; transform:translateY(0);} }
+@keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+
+.footer-note{ margin-top:28px; font-size:12px; color:var(--text-light); text-align:center; }
+#printReportsContainer{ display:none; }
+.pdf-options{ display:grid; grid-template-columns:1fr; gap:10px; }
+.pdf-option{ text-align:left; display:flex; flex-direction:column; gap:3px; align-items:flex-start; }
+.pdf-option strong{ font-size:14px; }
+.pdf-option span{ font-size:12px; font-weight:400; color:var(--text-secondary); }
+.print-report-title{ display:none; }
+.contract-dispo-table{ width:100%; border-collapse:collapse; }
+.contract-dispo-table th,.contract-dispo-table td{ border:1px solid var(--border); padding:8px 10px; vertical-align:top; font-size:13px; }
+.contract-dispo-table th{ background:var(--bg); text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-secondary); }
+.dispo-mini{ display:flex; flex-wrap:wrap; gap:4px; }
+.dispo-token{ display:inline-block; padding:2px 6px; border-radius:6px; border:1px solid var(--border); font-size:11px; background:var(--bg); }
+
+/* Rapport contractuels : modules visuels compacts */
+.contract-report{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; align-items:start; }
+.contract-sheet{ background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow-sm); break-inside:avoid; page-break-inside:avoid; }
+.contract-sheet-head{ margin-bottom:8px; }
+.contract-sheet-name{ font-size:20px; font-weight:700; letter-spacing:-.02em; line-height:1.05; margin-bottom:2px; }
+.contract-sheet-email{ font-size:12px; color:var(--text-secondary); font-style:italic; overflow-wrap:anywhere; }
+.contract-section{ margin-top:10px; }
+.contract-section-title{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-light); margin-bottom:5px; }
+.contract-course-list{ margin:0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:3px; }
+.contract-course-item{ font-size:12px; line-height:1.25; }
+.contract-course-meta{ color:var(--text-secondary); font-style:italic; }
+.contract-empty{ color:var(--text-light); font-style:italic; font-size:11px; }
+.contract-qualifs{ display:flex; flex-wrap:wrap; gap:4px; }
+.contract-qualif-chip{ display:inline-flex; align-items:center; padding:3px 7px; border-radius:999px; border:1px solid var(--border); background:var(--bg); font-size:10px; font-weight:600; }
+.contract-dispo-matrix{ display:grid; grid-template-columns:48px repeat(5,1fr); gap:4px; padding:8px; border:1px solid var(--border); border-radius:12px; background:var(--bg); }
+.contract-dispo-corner{ }
+.contract-dispo-head{ text-align:center; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-secondary); padding:2px 0; }
+.contract-dispo-rowlabel{ display:flex; align-items:center; justify-content:flex-start; font-size:9px; font-weight:700; color:var(--text-secondary); }
+.contract-dispo-cell{ min-height:22px; border-radius:6px; border:1px solid var(--border); background:#fff; display:flex; align-items:center; justify-content:center; font-size:0; overflow:hidden; }
+.contract-dispo-cell.available{ background:#fff; border-color:#111; }
+.contract-dispo-cell.unavailable{ background:#fff; }
+.contract-dispo-fill{ display:block; width:100%; height:100%; min-height:18px; }
+.contract-dispo-fill rect{ fill:#000; }
+
+@media print{
+  @page{ size:Letter landscape; margin:0.25in; }
+  *{ transition:none !important; animation:none !important; }
+  html,body{ width:100%; background:#fff !important; color:#111 !important; font-size:9px; line-height:1.2; }
+  #gridCanvas,.theme-toggle,.tabs,.search-input,.controls,.etape-chips,#conflitsBanner,.footer-note,.modal-overlay{ display:none !important; }
+  .container{ max-width:none !important; width:100% !important; padding:0 !important; margin:0 !important; }
+  .header{ margin:0 0 6px !important; padding:0 !important; align-items:flex-start; }
+  .header h1{ font-size:18px !important; margin:0 0 2px !important; letter-spacing:0; }
+  .header p{ font-size:10px !important; margin:0 !important; color:#333 !important; }
+  .tab-content{ display:none !important; }
+  #view-grille{ display:block !important; }
+  .card{ padding:0 !important; margin:0 !important; box-shadow:none !important; border:none !important; background:#fff !important; overflow:visible !important; }
+  .schedule-wrap{ overflow:visible !important; width:100% !important; }
+  .schedule-all{ display:flex !important; gap:6px !important; min-width:0 !important; width:100% !important; align-items:stretch !important; }
+  .schedule-all .sched-block{ flex:1 1 0 !important; min-width:0 !important; margin:0 !important; break-inside:avoid; page-break-inside:avoid; }
+
+  .rooms-view{ display:flex !important; gap:6px !important; min-width:0 !important; width:100% !important; }
+  .rooms-view .room-block{ flex:1 1 0 !important; min-width:0 !important; margin:0 !important; }
+  .room-summary,.room-free-note{ display:none !important; }
+
+  .schedule-title{ font-size:10px !important; margin:0 0 4px !important; line-height:1.1 !important; }
+  .schedule-title .badge-etape{ font-size:8px !important; padding:1px 5px !important; border-radius:8px !important; }
+  .schedule{ min-width:0 !important; width:100% !important; grid-template-columns:24px repeat(5,minmax(0,1fr)) !important; grid-auto-rows:27px !important; border-radius:6px !important; border:0.5px solid #bbb !important; }
+  .sch-head{ font-size:7px !important; letter-spacing:0 !important; padding:0 !important; }
+  .sch-time{ font-size:7px !important; padding:1px 2px 0 0 !important; color:#555 !important; }
+  .sch-cell,.sch-time,.sch-head,.sch-corner{ border-width:0.5px !important; }
+  .course-block{ margin:1px !important; padding:2px 3px !important; gap:0 !important; border-radius:4px !important; box-shadow:none !important; overflow:hidden !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .course-block:hover{ transform:none !important; box-shadow:none !important; }
+  .cb-code{ font-size:5.8px !important; line-height:1 !important; }
+  .cb-name{ font-size:7.2px !important; line-height:1.05 !important; }
+  .cb-prof{ font-size:7px !important; line-height:1 !important; margin-top:1px !important; }
+  .cb-heure{ font-size:6.8px !important; line-height:1 !important; }
+  .cb-local{ font-size:6px !important; line-height:1 !important; }
+  .legend{ margin-top:5px !important; gap:8px !important; break-inside:avoid; page-break-inside:avoid; }
+  .legend-item{ font-size:7px !important; gap:3px !important; color:#333 !important; }
+  .legend-dot{ width:7px !important; height:7px !important; border-radius:2px !important; }
+}
+
+@media print{
+  /* Rapports PDF spécialisés */
+  body.print-report-session #view-grille{ display:block !important; }
+  body.print-report-etapes #view-grille,
+  body.print-report-etapes #view-liste,
+  body.print-report-etapes #view-profs,
+  body.print-report-locaux #view-grille,
+  body.print-report-locaux #view-liste,
+  body.print-report-locaux #view-profs,
+  body.print-report-contractuels #view-grille,
+  body.print-report-contractuels #view-liste,
+  body.print-report-contractuels #view-profs{ display:none !important; }
+  body.print-report-distribution #view-grille,
+  body.print-report-distribution #view-profs{ display:none !important; }
+  body.print-report-distribution #view-liste{ display:block !important; }
+  body.print-report-profs #view-grille,
+  body.print-report-profs #view-liste{ display:none !important; }
+  body.print-report-profs #view-profs{ display:block !important; }
+  body.print-report-etapes #printReportsContainer,
+  body.print-report-locaux #printReportsContainer,
+  body.print-report-contractuels #printReportsContainer{ display:block !important; }
+  .print-report-title{ display:block !important; font-size:13px !important; font-weight:700 !important; margin:0 0 6px !important; }
+  .print-page{ break-after:page; page-break-after:always; }
+  .print-page:last-child{ break-after:auto; page-break-after:auto; }
+  body.print-report-etapes .sched-block{ margin:0 !important; break-inside:avoid; page-break-inside:avoid; }
+  body.print-report-etapes .schedule-title{ font-size:14px !important; margin:0 0 6px !important; }
+  body.print-report-etapes .schedule{ grid-auto-rows:34px !important; }
+  body.print-report-etapes .cb-code{ font-size:7px !important; }
+  body.print-report-etapes .cb-name{ font-size:9px !important; }
+  body.print-report-etapes .cb-prof{ font-size:8.5px !important; }
+  body.print-report-etapes .cb-heure{ font-size:8px !important; }
+  body.print-report-etapes .cb-local{ font-size:7px !important; }
+  body.print-report-etapes .schedule{ min-width:0 !important; width:100% !important; grid-template-columns:34px repeat(5,minmax(0,1fr)) !important; grid-auto-rows:38px !important; }
+
+  body.print-report-locaux #printReportsContainer{ padding:0 !important; }
+  body.print-report-locaux .print-report-title{ font-size:15px !important; margin-bottom:8px !important; }
+  body.print-report-locaux .room-summary,
+  body.print-report-locaux .room-free-note{ display:none !important; }
+  body.print-report-locaux .rooms-view{ display:block !important; min-width:0 !important; width:100% !important; }
+  body.print-report-locaux .room-block{ margin:0 !important; width:100% !important; }
+  body.print-report-locaux .schedule-title{ font-size:14px !important; margin:0 0 6px !important; }
+  body.print-report-locaux .schedule{ min-width:0 !important; width:100% !important; grid-template-columns:34px repeat(5,minmax(0,1fr)) !important; grid-auto-rows:38px !important; }
+  body.print-report-locaux .cb-code{ font-size:7px !important; }
+  body.print-report-locaux .cb-name{ font-size:9px !important; }
+  body.print-report-locaux .cb-prof{ font-size:8.5px !important; }
+  body.print-report-locaux .cb-heure{ font-size:8px !important; }
+  body.print-report-locaux .cb-local{ font-size:7px !important; }
+  body.print-report-distribution .table-container,
+  body.print-report-profs .table-container{ box-shadow:none !important; border:0.5px solid #bbb !important; border-radius:0 !important; margin:0 0 8px !important; break-inside:auto !important; page-break-inside:auto !important; }
+  body.print-report-distribution .table-header{ padding:6px 8px !important; }
+  body.print-report-distribution .table-header h3{ font-size:11px !important; }
+  body.print-report-distribution .data-table th,
+  body.print-report-distribution .data-table td,
+  body.print-report-profs .data-table th,
+  body.print-report-profs .data-table td{ padding:4px 5px !important; font-size:7.5px !important; border-bottom:0.5px solid #bbb !important; }
+  body.print-report-distribution .td-actions,
+  body.print-report-distribution .th-actions:last-child,
+  body.print-report-profs .td-actions,
+  body.print-report-profs .th-actions:last-child{ display:none !important; }
+  body.print-report-distribution .pill{ padding:1px 4px !important; font-size:7px !important; }
+  body.print-report-contractuels #printReportsContainer{ padding:0 !important; }
+  body.print-report-contractuels .print-report-title{ font-size:12px !important; margin-bottom:6px !important; }
+  body.print-report-contractuels .contract-report{ display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:8px !important; align-items:start !important; }
+  body.print-report-contractuels .contract-sheet{ box-shadow:none !important; border:0.5px solid #bbb !important; border-radius:8px !important; padding:7px 8px !important; margin:0 !important; min-height:3.22in !important; height:3.22in !important; overflow:hidden !important; }
+  body.print-report-contractuels .contract-sheet-head{ margin-bottom:5px !important; }
+  body.print-report-contractuels .contract-sheet-name{ font-size:14px !important; margin-bottom:1px !important; line-height:1.05 !important; }
+  body.print-report-contractuels .contract-sheet-email{ font-size:8px !important; line-height:1.1 !important; }
+  body.print-report-contractuels .contract-section{ margin-top:7px !important; }
+  body.print-report-contractuels .contract-section-title{ font-size:6px !important; margin-bottom:3px !important; letter-spacing:.08em !important; }
+  body.print-report-contractuels .contract-course-list{ gap:2px !important; }
+  body.print-report-contractuels .contract-course-item,
+  body.print-report-contractuels .contract-empty{ font-size:7px !important; line-height:1.2 !important; }
+  body.print-report-contractuels .contract-qualifs{ gap:3px !important; }
+  body.print-report-contractuels .contract-qualif-chip{ padding:1px 4px !important; font-size:6.5px !important; border:0.5px solid #aaa !important; }
+  body.print-report-contractuels .contract-dispo-matrix{ grid-template-columns:24px repeat(5,1fr) !important; gap:2px !important; padding:5px !important; border-radius:8px !important; border:0.5px solid #bbb !important; }
+  body.print-report-contractuels .contract-dispo-head{ font-size:6px !important; padding:1px 0 !important; }
+  body.print-report-contractuels .contract-dispo-rowlabel{ font-size:6px !important; }
+  body.print-report-contractuels .contract-dispo-cell{ min-height:12px !important; border-radius:2px !important; border:0.5px solid #999 !important; overflow:hidden !important; }
+  body.print-report-contractuels .contract-dispo-cell.available{ background:#fff !important; border-color:#000 !important; }
+  body.print-report-contractuels .contract-dispo-fill{ display:block !important; width:100% !important; height:12px !important; min-height:12px !important; }
+  body.print-report-contractuels .contract-dispo-fill rect{ fill:#000 !important; }
+}
+
+@media (max-width:768px){
+  .header{ flex-direction:column; }
+  .container{ padding:24px 14px; }
+}
+
+/* =========  AUTH OVERLAY  ========= */
+#loginOverlay{
+  position:fixed; inset:0; z-index:9999;
+  background:var(--bg); display:flex; align-items:center; justify-content:center; padding:20px;
+}
+#loginOverlay.hidden{ display:none; }
+.login-card{
+  background:var(--card-bg); border:1px solid var(--border); border-radius:20px;
+  box-shadow:var(--shadow-lg); padding:40px; width:100%; max-width:380px;
+  display:flex; flex-direction:column; gap:18px;
+}
+.login-card h2{ font-size:22px; font-weight:700; margin:0; text-align:center; }
+.login-card p{ font-size:13px; color:var(--text-secondary); text-align:center; margin:0; }
+.login-err{ font-size:13px; text-align:center; display:none; line-height:1.4; }
+.login-err.show{ display:block; }
+/* Masquage des éléments admin pour les lecteurs */
+.viewer-mode [data-admin-only]{ display:none !important; }
+/* Barre auth (rôle + déconnexion) */
+.auth-bar{ display:flex; align-items:center; gap:8px; flex-shrink:0; margin-top:4px; }
+.role-badge{
+  display:inline-flex; align-items:center; gap:6px; padding:5px 12px;
+  border-radius:50px; font-size:12px; font-weight:600;
+  background:var(--card-bg); border:1px solid var(--border);
+}
+.role-badge.admin{ border-color:var(--primary); color:var(--primary); }
+.role-badge.viewer{ border-color:var(--loc-enligne); color:#d5a021; }
+
+</style>
+</head>
+<body>
+<canvas id="gridCanvas"></canvas>
+
+<!-- Écran de connexion -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <h2>Planificateur d'horaire</h2>
+    <p>Design graphique — La Cité Collégiale</p>
+    <div class="login-err" id="loginErr"></div>
+    <div class="field">
+      <label>Courriel</label>
+      <input type="email" id="loginEmail" placeholder="prenom.nom@lacitec.on.ca" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input type="password" id="loginPassword" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%;display:flex;justify-content:center;">Se connecter</button>
+  </div>
+</div>
+<div class="container">
+
+  <div class="header">
+    <div class="header-left">
+      <h1>Planificateur d'horaire</h1>
+      <p>Design graphique 61508 — La Cité · <span id="sessionLabel">Automne 2026</span></p>
+    </div>
+    <div class="theme-toggle" id="themeToggle">
+      <span class="theme-toggle-icon" id="themeIcon">🌙</span>
+      <span class="theme-toggle-label" id="themeLabel">Mode sombre</span>
+      <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
+    </div>
+    <div class="auth-bar">
+      <span id="roleBadge" class="role-badge">…</span>
+      <button class="btn btn-sm" id="logoutBtn">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label for="sessionSelect">Session</label>
+      <select class="select" id="sessionSelect">
+        <option value="A2026">Automne 2026 (étapes 1-3-5)</option>
+        <option value="H2027">Hiver 2027 (étapes 2-4-6)</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Automatisation</label>
+      <div class="data-actions">
+        <button class="btn btn-sm btn-primary" id="btnGenerer" data-admin-only title="Générer automatiquement jour, heure et local">⚡ Générer l'horaire</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Versions</label>
+      <div class="data-actions">
+        <button class="btn btn-sm btn-primary" id="btnSaveVersion" data-admin-only title="Enregistrer une copie datée de l'horaire actuel">💾 Sauvegarder une version</button>
+        <button class="btn btn-sm" id="btnVersions" title="Voir l'historique et revenir à une version">🕘 Historique</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Exports <span class="hint">(session affichée)</span></label>
+      <div class="data-actions">
+        <button class="btn btn-sm" id="btnExcel" title="Télécharger l'horaire en Excel (grille + liste)">📊 Excel</button>
+        <button class="btn btn-sm" id="btnPDF" title="Imprimer ou enregistrer en PDF, format lettre">🖨 Imprimer / PDF</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Données</label>
+      <div class="data-actions">
+        <button class="btn btn-sm" id="btnExport" title="Télécharger une copie de sauvegarde (.json)">⬇ Exporter</button>
+        <button class="btn btn-sm" id="btnImport" data-admin-only title="Charger un fichier de sauvegarde (.json)">⬆ Importer</button>
+        <button class="btn btn-sm btn-ghost" id="btnReset" data-admin-only title="Revenir aux données A2026 d'origine">↺ Réinitialiser</button>
+        <input type="file" id="fileImport" accept="application/json,.json" style="display:none">
+      </div>
+    </div>
+    <div class="control-group save-status-group">
+      <label>&nbsp;</label>
+      <span class="hint save-status" id="saveStatus">Enregistré automatiquement</span>
+    </div>
+  </div>
+
+  <!-- Bannière de conflits (étape 6) -->
+  <div id="conflitsBanner"></div>
+
+  <div class="tabs">
+    <button class="tab active" data-view="grille">Grille d'horaire</button>
+    <button class="tab" data-view="liste">Distribution des cours</button>
+    <button class="tab" data-view="profs">Corps professoral</button>
+  </div>
+
+  <!-- VUE GRILLE -->
+  <div class="tab-content active" id="view-grille">
+    <div class="etape-chips" id="etapeChips"></div>
+    <div class="card">
+      <div class="schedule-wrap" id="scheduleContainer"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+
+  <!-- VUE LISTE -->
+  <div class="tab-content" id="view-liste">
+    <div id="listeContainer"></div>
+  </div>
+
+  <!-- VUE CORPS PROFESSORAL -->
+  <div class="tab-content" id="view-profs">
+    <div class="liste-head-row">
+      <h2 class="liste-title">Corps professoral</h2>
+      <button class="btn btn-primary" id="addProfBtn" data-admin-only>+ Ajouter un prof</button>
+    </div>
+    <div id="profsContainer"></div>
+  </div>
+
+  <!-- Zone générée uniquement pour certains rapports PDF -->
+  <div id="printReportsContainer" aria-hidden="true"></div>
+
+  <div class="footer-note">v2.0 — moteur algorithmique bonifié (diagnostic, propositions multiples, score global, simulation avant application) + historique de versions daté (sauvegarder / restaurer) + génération automatique (8 règles, dont le regroupement des cours d'un même prof contractuel sur une même journée) + statut des profs + verrou des cours. Affichage, édition, sauvegarde, conflits et qualifications inclus. Les exports Excel/PDF viendront à l'étape suivante.</div>
+</div>
+
+<!-- Fenêtre modale réutilisable -->
+<div class="modal-overlay" id="modalOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3 id="modalTitle">Titre</h3>
+      <button class="modal-close" id="modalClose" title="Fermer">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+/* ============================================================
+   SUPABASE — Client, authentification et rôles
+   ============================================================ */
+const SUPABASE_URL = 'https://kezvurkleobvezovrocn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_m_Q9hbUrNLBpURukxQqMqg_xQdBISXA';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let userRole    = 'viewer'; // 'admin' | 'viewer'
+
+async function getUserRole(userId){
+  try{
+    const { data } = await sb.from('user_roles').select('role').eq('user_id', userId).single();
+    return data?.role || 'viewer';
+  }catch(e){ return 'viewer'; }
+}
+
+function applyRoleUI(){
+  if(userRole === 'viewer'){
+    document.body.classList.add('viewer-mode');
+  } else {
+    document.body.classList.remove('viewer-mode');
+  }
+  const badge = document.getElementById('roleBadge');
+  if(badge){
+    badge.textContent = userRole === 'admin' ? '⚙ Admin' : '👁 Lecteur';
+    badge.className   = 'role-badge ' + userRole;
+  }
+}
+
+<script>
+/* ============================================================
+   ÉTAPE 1 — MODÈLE DE DONNÉES
+   Source unique de vérité. Tout (grille + liste) se génère d'ici.
+   ============================================================ */
+
+const JOURS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'];
+
+// Découpage automatique prénom / nom (1er mot = prénom, le reste = nom)
+function splitNom(complet){
+  if(!complet || complet.trim()==='À confirmer') return {prenom:'', nom:'À confirmer'};
+  const parts = complet.trim().split(/\s+/);
+  return { prenom: parts[0], nom: parts.slice(1).join(' ') };
+}
+
+/* Données préchargées du cursus révisé 2026-2027 (Design graphique 61508).
+   - AUTOMNE (A2026) : étapes 1, 3, 5 — horaire complet (jour, plage, local, prof).
+   - HIVER (H2027) : étapes 2, 4, 6 — catalogue de cours, à planifier (pas encore d'horaire).
+   prof = nom complet, découpé automatiquement. Numéros conformes au cursus révisé. */
+const COURS_BRUTS = [
+  /* ===================== AUTOMNE 2026 =====================
+     Année de transition : étape 1 = NOUVEAU cursus (cohorte de septembre 2026) ;
+     étapes 3 et 5 = ANCIEN cursus (cohortes en cours, inchangées cette année). */
+  // ÉTAPE 1 — NOUVEAU cursus
+  {session:'A2026', etape:1, numeroCours:'23759', nomCours:'Créativité exploratoire', local:'D2050', jour:'Mardi', plageHoraire:'13h à 16h', modePrestation:'Comodal', prof:'Nicolas Beland Latreille', courriel:'NiBelan@lacitec.on.ca'},
+  {session:'A2026', etape:1, numeroCours:'24654', nomCours:'Fondements du design graphique', local:'D2050', jour:'Mardi', plageHoraire:'9h à 12h', modePrestation:'Comodal', prof:'Nadine Bariteau', courriel:'nadine.bariteau@hotmail.com'},
+  {session:'A2026', etape:1, numeroCours:'24642', nomCours:'Dessin', local:'D2050', jour:'Lundi', plageHoraire:'9h à 12h', modePrestation:'Comodal', prof:'Corinne Blouin-Hudon', courriel:'corinneblouinhudon@gmail.com'},
+  {session:'A2026', etape:1, numeroCours:'24643', nomCours:'Techniques de prépresse', local:'D2050', jour:'Mercredi', plageHoraire:'16h à 19h', modePrestation:'Comodal', prof:'Élodie Nonnon', courriel:'elo.nonnon@gmail.com'},
+  {session:'A2026', etape:1, numeroCours:'24659', nomCours:'Bases de la typographie', local:'D2050', jour:'Mercredi', plageHoraire:'12h à 15h', modePrestation:'Comodal', prof:'Nadine Bariteau', courriel:'nadine.bariteau@hotmail.com'},
+  {session:'A2026', etape:1, numeroCours:'24668', nomCours:'Principes de mise en page', local:'D2050', jour:'Jeudi', plageHoraire:'17h à 20h', modePrestation:'Comodal', prof:'Sara Drouin', courriel:'sara.drouin.12@gmail.com'},
+  {session:'A2026', etape:1, numeroCours:'26985 FRA', nomCours:'Français écrit', local:'COMODAL', jour:'Lundi', plageHoraire:'13h à 16h', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  // ÉTAPE 3 — ANCIEN cursus (cohorte en cours, inchangée cette année)
+  {session:'A2026', etape:3, numeroCours:'026990 ENL', nomCours:'English', local:'COMODAL', jour:'Mardi', plageHoraire:'9h à 12h', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'A2026', etape:3, numeroCours:'024645 ART', nomCours:'Animation graphique', local:'D2050', jour:'Jeudi', plageHoraire:'13h à 16h', modePrestation:'Comodal', prof:'Antonio Hilario', courriel:'ahilar@lacitec.on.ca'},
+  {session:'A2026', etape:3, numeroCours:'024666 ART', nomCours:'Illustration', local:'D2050', jour:'Lundi', plageHoraire:'13h à 16h', modePrestation:'Comodal', prof:'Corinne Blouin-Hudon', courriel:'corinneblouinhudon@gmail.com'},
+  {session:'A2026', etape:3, numeroCours:'024646 ART', nomCours:'Production imprimée', local:'D2050', jour:'Mardi', plageHoraire:'16h à 19h', modePrestation:'Comodal', prof:'Mathieu Desjardins', courriel:'mdesjardinselevate@gmail.com'},
+  {session:'A2026', etape:3, numeroCours:'024651 ART', nomCours:'Typographie exploratoire', local:'D2050', jour:'Jeudi', plageHoraire:'9h à 12h', modePrestation:'Comodal', prof:'Miguel Boisvenue', courriel:'migboisvenuedesigns@gmail.com'},
+  {session:'A2026', etape:3, numeroCours:'030157 MDI', nomCours:'Image de marque', local:'D2060', jour:'Mercredi', plageHoraire:'9h à 12h', modePrestation:'Comodal', prof:'Nicolas Beland Latreille', courriel:'NiBelan@lacitec.on.ca'},
+  {session:'A2026', etape:3, numeroCours:'030156 TEC', nomCours:'Design adaptatif', local:'D2060', jour:'Mercredi', plageHoraire:'13h à 16h', modePrestation:'Comodal', prof:'Nicolas Beland Latreille', courriel:'NiBelan@lacitec.on.ca'},
+  // ÉTAPE 5 — ANCIEN cursus (cohorte en cours, inchangée cette année)
+  {session:'A2026', etape:5, numeroCours:'024669 ART', section:'S.010', nomCours:'Portfolio', local:'EN LIGNE', jour:'Mercredi', plageHoraire:'9h à 12h', modePrestation:'En ligne', prof:'Antonio Hilario', courriel:'ahilar@lacitec.on.ca'},
+  {session:'A2026', etape:5, numeroCours:'024674 ART', nomCours:'Portfolio numérique et autopromotion', local:'D2060', jour:'Mardi', plageHoraire:'13h à 16h', modePrestation:'Comodal', prof:'Antonio Hilario', courriel:'ahilar@lacitec.on.ca'},
+  {session:'A2026', etape:5, numeroCours:'024669 ART', section:'S.020', nomCours:'Portfolio', local:'EN LIGNE', jour:'Mercredi', plageHoraire:'13h à 16h', modePrestation:'En ligne', prof:'Antonio Hilario', courriel:'ahilar@lacitec.on.ca'},
+  {session:'A2026', etape:5, numeroCours:'024663 TEC', nomCours:'Production numérique', local:'D2060', jour:'Lundi', plageHoraire:'9h à 12h', modePrestation:'Comodal', prof:'Nicolas Beland Latreille', courriel:'NiBelan@lacitec.on.ca'},
+  {session:'A2026', etape:5, numeroCours:'24648 ART', nomCours:"Production d'impression numérique", local:'D2060', jour:'Jeudi', plageHoraire:'9h à 12h', modePrestation:'Comodal', prof:'Patrick Ranger', courriel:'Pat@lashopco.com'},
+  {session:'A2026', etape:5, numeroCours:'24655 ADM', nomCours:'Préparation au monde du travail', local:'D2060', jour:'Jeudi', plageHoraire:'13h à 16h', modePrestation:'Comodal', prof:'Patrick Ranger', courriel:'Pat@lashopco.com'},
+  {session:'A2026', etape:5, numeroCours:'24664 DSN', nomCours:'Signes et symboles', local:'D2060', jour:'Lundi', plageHoraire:'13h à 16h', modePrestation:'Comodal', prof:'Stephanie Hubell-Lacroix', courriel:'stephesstuff@gmail.com'},
+  {session:'A2026', etape:5, numeroCours:'24656 ART', nomCours:'Affiches', local:'D2060', jour:'Mardi', plageHoraire:'9h à 12h', modePrestation:'Comodal', prof:'Vanessa Delaveau', courriel:'v.delaveau@gmail.com'},
+
+  /* ===================== HIVER 2027 (à planifier) ===================== */
+  // ÉTAPE 2
+  {session:'H2027', etape:2, numeroCours:'32005', nomCours:'Création photo et vidéo', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:2, numeroCours:'32009', nomCours:'Création numérique', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:2, numeroCours:'32014', nomCours:'Dessin vectoriel', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:2, numeroCours:'32012', nomCours:'Imagerie numérique', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:2, numeroCours:'32018', nomCours:'Exploration typographique', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:2, numeroCours:'24672', nomCours:'Mise en page', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:2, numeroCours:'26984 FRA', nomCours:'Français écrit', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  // ÉTAPE 4
+  {session:'H2027', etape:4, numeroCours:'32042', nomCours:'Design cinétique', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:4, numeroCours:'32034', nomCours:'Expérience utilisateur', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:4, numeroCours:'32046', nomCours:'Productivité et intelligence artificielle générative', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:4, numeroCours:'24671', nomCours:'Emballage', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:4, numeroCours:'24649', nomCours:'Édition imprimée et numérique', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:4, numeroCours:'24665', nomCours:'Illustration numérique', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:4, numeroCours:'26991 ENL', nomCours:'English', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  // ÉTAPE 6
+  {session:'H2027', etape:6, numeroCours:'24647', nomCours:"Design d'exposition physique", local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:6, numeroCours:'30159', nomCours:"Design d'exposition numérique", local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:6, numeroCours:'24657', nomCours:'Création synthèse', local:'', jour:'', plageHoraire:'', modePrestation:'Comodal', prof:'À confirmer', courriel:'À confirmer'},
+  {session:'H2027', etape:6, numeroCours:'30160', nomCours:'Stage', local:'', jour:'', plageHoraire:'', modePrestation:'Stage', prof:'À confirmer', courriel:'À confirmer'}
+];
+
+// Enrichissement : on ajoute prenom/nom + heures début/fin extraites de la plage horaire.
+function parsePlage(p){
+  const m = p.match(/(\d{1,2})\s*h.*?(\d{1,2})\s*h/);
+  if(!m) return {debut:null, fin:null};
+  return { debut:parseInt(m[1],10), fin:parseInt(m[2],10) };
+}
+
+/* --- Registre du corps professoral (liste normalisée) ---
+   Chaque prof existe UNE seule fois. Les cours pointent vers un profId.
+   Construit automatiquement à partir des données brutes (dédupliqué par courriel, sinon par nom). */
+const PROFS = [];
+let _profSeq = 0;
+function nextProfId(){ return ++_profSeq; }
+
+function findOrCreateProf(nomComplet, courriel){
+  if(!nomComplet || nomComplet.trim()==='À confirmer') return null; // cours non assigné
+  const mail = (courriel && courriel!=='À confirmer') ? courriel.trim() : '';
+  const complet = nomComplet.trim();
+  let p = PROFS.find(x=>
+    (mail && x.courriel && x.courriel.toLowerCase()===mail.toLowerCase()) ||
+    ((x.prenom+' '+x.nom).trim()===complet)
+  );
+  if(p){ if(!p.courriel && mail) p.courriel = mail; return p.id; }
+  const {prenom,nom} = splitNom(complet);
+  const id = nextProfId();
+  PROFS.push({ id, prenom, nom, courriel:mail, telephone:'', dispos:[], qualifications:[] });
+  return id;
+}
+
+let _coursSeq = 0;
+function nextCoursId(){ return ++_coursSeq; }
+
+const COURS = [];
+
+// (Re)charge le cursus 2026-2027 (Automne + Hiver) dans PROFS + COURS (1er lancement et réinitialisation)
+function chargerDonneesParDefaut(){
+  PROFS.length = 0; _profSeq = 0;
+  COURS.length = 0; _coursSeq = 0;
+  COURS_BRUTS.forEach(c=>{
+    const {debut,fin} = parsePlage(c.plageHoraire);
+    const profId = findOrCreateProf(c.prof, c.courriel);
+    COURS.push({
+      id: nextCoursId(),
+      etape: c.etape, numeroCours: c.numeroCours, section: c.section||'',
+      nomCours: c.nomCours, local: c.local, jour: c.jour,
+      plageHoraire: c.plageHoraire, modePrestation: c.modePrestation,
+      profId, debut, fin, session: c.session || 'A2026', verrou:false
+    });
+  });
+}
+
+/* --- Sessions : Automne (étapes 1,3,5) et Hiver (étapes 2,4,6) ---
+   Une seule session est affichée à la fois. ETAPES reflète la session active. */
+const SESSIONS = {
+  A2026: { label:'Automne 2026', etapes:[1,3,5] },
+  H2027: { label:'Hiver 2027',  etapes:[2,4,6] }
+};
+let sessionActive = 'A2026';
+let ETAPES = SESSIONS[sessionActive].etapes;   // étapes de la session affichée
+function appliquerSession(){
+  ETAPES = SESSIONS[sessionActive].etapes;
+  etapeActive = ETAPES[0];
+}
+// Bascule entre Automne et Hiver : recale les étapes, reconstruit les vues.
+function switchSession(s){
+  if(!SESSIONS[s] || s===sessionActive) return;
+  sessionActive = s;
+  appliquerSession();
+  const lbl = document.getElementById('sessionLabel');
+  if(lbl) lbl.textContent = SESSIONS[s].label;
+  buildListe();    // recrée les panneaux de distribution pour les bonnes étapes
+  renderLegend();
+  refreshAll();    // conflits + chips + grille + corps prof + sauvegarde
+}
+
+// --- Helpers prof : un cours ne stocke qu'un profId, on résout les infos ici ---
+function getProf(id){ return PROFS.find(p=>p.id===id) || null; }
+function profLabel(id){ const p=getProf(id); return p ? (p.prenom+' '+p.nom).trim() : 'À confirmer'; }
+function nbCoursProf(id){ return COURS.filter(c=>c.profId===id).length; }
+// Valeur d'un champ d'un cours, en allant chercher dans le prof au besoin (pour tri/recherche)
+function fieldVal(c, key){
+  if(key==='nom' || key==='prenom' || key==='telephone' || key==='courriel'){
+    const p = getProf(c.profId);
+    if(key==='nom')      return p ? p.nom : 'À confirmer';
+    if(key==='prenom')   return p ? p.prenom : '';
+    if(key==='telephone')return p ? p.telephone : '';
+    if(key==='courriel') return p ? p.courriel : '';
+  }
+  return c[key];
+}
+
+// Couleur d'un local (variables CSS)
+function couleurLocal(local){
+  const u = (local||'').toUpperCase();
+  if(u==='D2050') return 'var(--loc-d2050)';
+  if(u==='D2060') return 'var(--loc-d2060)';
+  if(u==='EN LIGNE') return 'var(--loc-enligne)';
+  if(u==='COMODAL') return 'var(--loc-comodal)';
+  return 'var(--text-secondary)';
+}
+
+/* ============================================================
+   ÉTAPE 3 — AFFICHAGE EN LECTURE SEULE
+   ============================================================ */
+
+let etapeActive = ETAPES[0];
+
+// --- Grille calendrier ---
+const H_DEBUT = 8, H_FIN = 22; // 8h à 22h (toutes les heures visibles)
+
+function renderChips(){
+  const box = document.getElementById('etapeChips');
+  box.innerHTML = '';
+  ETAPES.forEach(e=>{
+    const b = document.createElement('button');
+    b.className = 'chip' + (e===etapeActive?' active':'');
+    b.textContent = 'Étape ' + e;
+    b.onclick = ()=>{ etapeActive = e; renderChips(); renderSchedule(); };
+    box.appendChild(b);
+  });
+  // Vue complète : les 3 étapes de la session
+  const all = document.createElement('button');
+  all.className = 'chip' + (etapeActive==='all'?' active':'');
+  all.textContent = 'Vue complète';
+  all.onclick = ()=>{ etapeActive='all'; renderChips(); renderSchedule(); };
+  box.appendChild(all);
+
+  // Vues complémentaires : disponibilité par local principal
+  ['D2050','D2060'].forEach(local=>{
+    const room = document.createElement('button');
+    const key = 'local-' + local;
+    room.className = 'chip' + (etapeActive===key?' active':'');
+    room.textContent = local;
+    room.title = 'Voir les plages occupées et libres dans ' + local;
+    room.onclick = ()=>{ etapeActive=key; renderChips(); renderSchedule(); };
+    box.appendChild(room);
+  });
+}
+
+// Construit une grille calendrier pour une étape donnée (compact = version réduite pour la vue côte à côte)
+function buildGrid(etape, compact=false){
+  const wrap = document.createElement('div'); wrap.className='sched-block' + (compact?' compact':'');
+  const title = document.createElement('div'); title.className='schedule-title';
+  title.innerHTML = 'Horaire <span class="badge-etape">Étape ' + etape + '</span>';
+  const grid = document.createElement('div'); grid.className='schedule';
+
+  // coin + entêtes jours
+  const corner = document.createElement('div'); corner.className='sch-corner'; grid.appendChild(corner);
+  JOURS.forEach(j=>{ const h=document.createElement('div'); h.className='sch-head'; h.textContent=j; grid.appendChild(h); });
+
+  // lignes d'heures (libellé + cellules vides) — 8h à 22h, toutes affichées
+  for(let h=H_DEBUT; h<=H_FIN; h++){
+    const t = document.createElement('div'); t.className='sch-time'; t.textContent = h+'h'; grid.appendChild(t);
+    for(let d=0; d<5; d++){ const cell=document.createElement('div'); cell.className='sch-cell'; grid.appendChild(cell); }
+  }
+
+  // blocs de cours
+  COURS.filter(c=>c.etape===etape).forEach(c=>{
+    if(c.debut==null) return;
+    const colJour = JOURS.indexOf(c.jour);
+    if(colJour<0) return;
+    const rowStart = (c.debut - H_DEBUT) + 2;          // +1 entête, +1 base grille
+    const rowEnd   = (c.fin   - H_DEBUT) + 2;
+    const block = document.createElement('div');
+    block.className = 'course-block' + (_idsEnConflit.has(c.id) ? ' conflit' : '');
+    block.style.gridColumn = (colJour + 2);            // +1 col heures, +1 base
+    block.style.gridRow = rowStart + ' / ' + rowEnd;
+    block.style.background = couleurLocal(c.local);
+    block.title = _idsEnConflit.has(c.id) ? 'Conflit d\'horaire — cliquer pour modifier' : 'Cliquer pour modifier';
+    block.onclick = ()=> openCourseModal(c.id);
+    const profTxt = profLabel(c.profId);
+    block.innerHTML =
+      '<div class="cb-code">'+c.numeroCours+(c.section?' · '+c.section:'')+'</div>'+
+      '<div class="cb-name">'+c.nomCours+'</div>'+
+      '<div class="cb-prof">'+profTxt+'</div>'+
+      '<div class="cb-heure">'+c.plageHoraire+'</div>'+
+      '<div class="cb-local">'+c.local+'</div>';
+    grid.appendChild(block);
+  });
+
+  wrap.appendChild(title); wrap.appendChild(grid);
+  return wrap;
+}
+
+function coursDuLocalSession(local){
+  const cible = String(local||'').toUpperCase();
+  return COURS.filter(c=> c.session===sessionActive && String(c.local||'').toUpperCase()===cible && c.debut!=null && JOURS.includes(c.jour));
+}
+
+function calculerOccupationLocal(local){
+  const cours = coursDuLocalSession(local);
+  const total = (H_FIN - H_DEBUT + 1) * JOURS.length;
+  let occupe = 0;
+  cours.forEach(c=>{ occupe += Math.max(0, Math.min(c.fin||0,H_FIN) - Math.max(c.debut||0,H_DEBUT)); });
+  return { cours:cours.length, heures:occupe, total };
+}
+
+// Construit une grille de disponibilité pour un local : les espaces vides représentent les plages libres.
+function buildRoomGrid(local){
+  const wrap = document.createElement('div'); wrap.className='room-block compact';
+  const title = document.createElement('div'); title.className='schedule-title';
+  title.innerHTML = 'Disponibilité <span class="badge-etape">' + esc(local) + '</span>';
+  const grid = document.createElement('div'); grid.className='schedule';
+
+  const corner = document.createElement('div'); corner.className='sch-corner'; grid.appendChild(corner);
+  JOURS.forEach(j=>{ const h=document.createElement('div'); h.className='sch-head'; h.textContent=j; grid.appendChild(h); });
+
+  for(let h=H_DEBUT; h<=H_FIN; h++){
+    const t = document.createElement('div'); t.className='sch-time'; t.textContent = h+'h'; grid.appendChild(t);
+    for(let d=0; d<5; d++){
+      const cell=document.createElement('div');
+      cell.className='sch-cell';
+      cell.title = local+' libre le '+JOURS[d]+' à '+h+'h';
+      grid.appendChild(cell);
+    }
+  }
+
+  coursDuLocalSession(local).forEach(c=>{
+    const colJour = JOURS.indexOf(c.jour);
+    if(colJour<0) return;
+    const rowStart = (c.debut - H_DEBUT) + 2;
+    const rowEnd   = (c.fin   - H_DEBUT) + 2;
+    const block = document.createElement('div');
+    block.className = 'course-block' + (_idsEnConflit.has(c.id) ? ' conflit' : '');
+    block.style.gridColumn = (colJour + 2);
+    block.style.gridRow = rowStart + ' / ' + rowEnd;
+    block.style.background = couleurLocal(local);
+    block.title = 'Occupé : '+c.numeroCours+' — '+c.nomCours+' ('+c.jour+', '+c.plageHoraire+')';
+    block.onclick = ()=> openCourseModal(c.id);
+    block.innerHTML =
+      '<div class="cb-code">É'+c.etape+' · '+esc(c.numeroCours)+(c.section?' · '+esc(c.section):'')+'</div>'+ 
+      '<div class="cb-name">'+esc(c.nomCours)+'</div>'+ 
+      '<div class="cb-prof">'+esc(profLabel(c.profId))+'</div>'+ 
+      '<div class="cb-heure">'+esc(c.plageHoraire)+'</div>'+ 
+      '<div class="cb-local">'+esc(local)+'</div>';
+    grid.appendChild(block);
+  });
+
+  wrap.appendChild(title); wrap.appendChild(grid);
+  return wrap;
+}
+
+function buildRoomsAvailabilityView(localFiltre){
+  const outer = document.createElement('div');
+  const locaux = localFiltre ? [localFiltre] : ['D2050','D2060'];
+  const summary = document.createElement('div');
+  summary.className = 'room-summary';
+  summary.innerHTML = locaux.map(local=>{
+    const stats = calculerOccupationLocal(local);
+    return '<span class="room-summary-item"><b>'+esc(local)+'</b> : '+stats.cours+' cours · '+stats.heures+' h occupées</span>';
+  }).join('') + '<span class="room-summary-item">Les cases vides indiquent les plages libres</span>';
+  const row = document.createElement('div');
+  row.className = 'rooms-view' + (localFiltre ? ' single-room' : '');
+  locaux.forEach(local=> row.appendChild(buildRoomGrid(local)));
+  const note = document.createElement('div');
+  note.className = 'room-free-note';
+  note.textContent = 'Astuce : cliquez sur un bloc occupé pour modifier le cours associé.';
+  outer.appendChild(summary);
+  outer.appendChild(row);
+  outer.appendChild(note);
+  return outer;
+}
+
+function renderSchedule(){
+  const cont = document.getElementById('scheduleContainer');
+  cont.innerHTML = '';
+  if(etapeActive==='all'){
+    const row = document.createElement('div'); row.className='schedule-all';
+    ETAPES.forEach(e=> row.appendChild(buildGrid(e, true)));
+    cont.appendChild(row);
+  } else if(etapeActive==='local-D2050' || etapeActive==='local-D2060'){
+    cont.appendChild(buildRoomsAvailabilityView(etapeActive.replace('local-','')));
+  } else {
+    cont.appendChild(buildGrid(etapeActive));
+  }
+}
+
+function renderLegend(){
+  const box = document.getElementById('legend');
+  const locaux = [
+    ['D2050','var(--loc-d2050)'],['D2060','var(--loc-d2060)'],
+    ['EN LIGNE','var(--loc-enligne)'],['COMODAL (à confirmer)','var(--loc-comodal)']
+  ];
+  box.innerHTML = locaux.map(([nom,clr])=>
+    '<div class="legend-item"><span class="legend-dot" style="background:'+clr+'"></span>'+nom+'</div>'
+  ).join('');
+}
+
+// --- Liste de texte : un panneau par étape, chacun avec sa recherche + son tri ---
+const ORDRE_JOUR = {Lundi:1, Mardi:2, Mercredi:3, Jeudi:4, Vendredi:5};
+
+// Colonnes affichées (clé de tri + libellé). 'etape' retirée car on groupe par étape.
+const COLS = [
+  {key:'numeroCours', label:'# cours'},
+  {key:'nomCours',    label:'Nom du cours'},
+  {key:'jour',        label:'Jour'},
+  {key:'plageHoraire',label:'Horaire'},
+  {key:'modePrestation',label:'Mode'},
+  {key:'local',       label:'Local'},
+  {key:'nom',         label:'Nom'},
+  {key:'prenom',      label:'Prénom'},
+  {key:'telephone',   label:'Numéro du prof'},
+  {key:'courriel',    label:'Courriel'}
+];
+
+// État de tri/recherche indépendant par étape (les 6 étapes des deux sessions)
+const listeState = {}; // { [etape]: {sortKey, sortDir, q} }
+[1,2,3,4,5,6].forEach(e=> listeState[e] = {sortKey:'jour', sortDir:1, q:''});
+
+function compareVal(a, b, key){
+  let va, vb;
+  if(key==='jour'){ va = ORDRE_JOUR[a.jour]||99; vb = ORDRE_JOUR[b.jour]||99; }
+  else { va = fieldVal(a,key); vb = fieldVal(b,key);
+    if(typeof va==='string') va = va.toLowerCase();
+    if(typeof vb==='string') vb = vb.toLowerCase();
+  }
+  if(va<vb) return -1; if(va>vb) return 1; return 0;
+}
+
+// Construit les 3 panneaux (un par étape) une seule fois
+function buildListe(){
+  const cont = document.getElementById('listeContainer');
+  cont.innerHTML = '';
+  ETAPES.forEach(e=>{
+    const wrap = document.createElement('div'); wrap.className='table-container';
+    const head = document.createElement('div'); head.className='table-header';
+    head.innerHTML =
+      '<h3><span class="badge-etape">Étape '+e+'</span> '+
+      '<span class="liste-count" id="count-'+e+'"></span></h3>'+
+      '<div class="table-tools">'+
+        '<input class="search-input" id="search-'+e+'" placeholder="Rechercher dans l\'étape '+e+'…">'+
+        '<button class="btn btn-primary btn-sm" data-admin-only id="add-'+e+'">+ Ajouter un cours</button>'+
+      '</div>';
+    const tableWrap = document.createElement('div'); tableWrap.style.overflowX='auto';
+    const table = document.createElement('table'); table.className='data-table'; table.id='table-'+e;
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+    COLS.forEach(col=>{
+      const th = document.createElement('th'); th.textContent = col.label; th.dataset.key = col.key;
+      th.onclick = ()=>{
+        const st = listeState[e];
+        if(st.sortKey===col.key){ st.sortDir *= -1; } else { st.sortKey = col.key; st.sortDir = 1; }
+        renderBody(e);
+      };
+      trh.appendChild(th);
+    });
+    const thAct = document.createElement('th'); thAct.textContent='Actions'; thAct.className='th-actions'; trh.appendChild(thAct);
+    thead.appendChild(trh);
+    const tbody = document.createElement('tbody'); tbody.id='body-'+e;
+    table.appendChild(thead); table.appendChild(tbody);
+    tableWrap.appendChild(table);
+    wrap.appendChild(head); wrap.appendChild(tableWrap);
+    cont.appendChild(wrap);
+
+    // recherche propre à cette étape — re-rend seulement ce tbody (le focus reste dans le champ)
+    head.querySelector('#search-'+e).addEventListener('input', ev=>{
+      listeState[e].q = (ev.target.value||'').toLowerCase();
+      renderBody(e);
+    });
+    // ajouter un cours pré-rempli avec cette étape
+    head.querySelector('#add-'+e).addEventListener('click', ()=> openCourseModal(null, e));
+  });
+  renderAllBodies();
+}
+
+function renderAllBodies(){ ETAPES.forEach(renderBody); }
+
+function renderBody(e){
+  const st = listeState[e];
+  const tbody = document.getElementById('body-'+e);
+  let rows = COURS.filter(c=>c.etape===e).filter(c=>{
+    if(!st.q) return true;
+    const p = getProf(c.profId);
+    return [c.numeroCours,c.nomCours,c.local,c.jour,c.plageHoraire,c.modePrestation,
+            p?p.prenom:'', p?p.nom:'À confirmer', p?p.telephone:'', p?p.courriel:'']
+      .join(' ').toLowerCase().includes(st.q);
+  });
+  rows.sort((a,b)=> compareVal(a,b,st.sortKey) * st.sortDir);
+
+  const cnt = document.getElementById('count-'+e);
+  if(cnt) cnt.textContent = rows.length + ' cours';
+
+  // marqueurs de tri sur les entêtes
+  document.querySelectorAll('#table-'+e+' th').forEach(th=>{
+    th.classList.remove('sorted-asc','sorted-desc');
+    if(th.dataset.key===st.sortKey) th.classList.add(st.sortDir===1?'sorted-asc':'sorted-desc');
+  });
+
+  tbody.innerHTML = '';
+  rows.forEach(c=>{
+    const tr = document.createElement('tr');
+    if(_idsEnConflit.has(c.id)) tr.className = 'conflit-row';
+    const p = getProf(c.profId);
+    const profNom = p ? esc(p.nom) : '<span class="muted">À confirmer</span>';
+    const profPre = p && p.prenom ? esc(p.prenom) : '<span class="muted">—</span>';
+    const tel = p && p.telephone ? esc(p.telephone) : '<span class="muted">—</span>';
+    const mail = (p && p.courriel) ? '<a class="email-link" href="mailto:'+esc(p.courriel)+'">'+esc(p.courriel)+'</a>'
+               : '<span class="muted">À confirmer</span>';
+    tr.innerHTML =
+      '<td>'+esc(c.numeroCours)+(c.section?' <span class="muted">'+esc(c.section)+'</span>':'')+'</td>'+
+      '<td>'+esc(c.nomCours)+'</td>'+
+      '<td>'+esc(c.jour)+'</td>'+
+      '<td>'+esc(c.plageHoraire)+'</td>'+
+      '<td>'+esc(c.modePrestation)+'</td>'+
+      '<td><span class="pill" style="background:'+couleurLocal(c.local)+'">'+esc(c.local)+'</span></td>'+
+      '<td>'+profNom+'</td>'+
+      '<td>'+profPre+'</td>'+
+      '<td>'+tel+'</td>'+
+      '<td>'+mail+'</td>'+
+      '<td class="td-actions">'+
+      '<button class="icon-btn'+(c.verrou?' icon-btn-lock':'')+'" data-admin-only title="'+(c.verrou?'Verrouillé — déverrouiller (sera reconservé à la génération)':'Verrouiller (conserver lors de la génération)')+'" data-lock="'+c.id+'">'+(c.verrou?'🔒':'🔓')+'</button>'+
+      '<button class="icon-btn" data-admin-only title="Modifier" data-edit="'+c.id+'">✎</button>'+
+      '<button class="icon-btn icon-btn-danger" data-admin-only title="Supprimer" data-del="'+c.id+'">🗑</button></td>';
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-lock]').forEach(b=> b.onclick = ()=> toggleVerrou(+b.dataset.lock));
+  tbody.querySelectorAll('[data-edit]').forEach(b=> b.onclick = ()=> openCourseModal(+b.dataset.edit));
+  tbody.querySelectorAll('[data-del]').forEach(b=> b.onclick = ()=> supprimerCours(+b.dataset.del));
+}
+
+// Échappement HTML (les champs deviennent éditables → on protège l'affichage)
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+/* ============================================================
+   ÉTAPE 4 — ÉDITION (CRUD) : cours + corps professoral
+   On ne modifie que les données (COURS / PROFS), puis on régénère
+   toutes les vues via refreshAll(). Aucune vue n'est touchée à la main.
+   ============================================================ */
+
+const LOCAUX_CONNUS = ['D2050','D2060','EN LIGNE','COMODAL']; // COMODAL demeure pour compatibilité avec les anciennes données, mais n'est pas une salle physique
+const MODES_CONNUS = ['Comodal','En ligne','Présentiel'];
+const DUREE_COURS = 3; // Automne : tous les cours durent 3 h. On ne choisit que l'heure de début.
+// Disponibilités : 3 demi-journées par jour. Donnée destinée au futur montage automatique.
+const PERIODES = [['AM','Avant-midi'],['PM','Après-midi'],['SOIR','Soir']];
+// Bornes horaires de chaque demi-journée [début, fin[ — sert au conflit prof/disponibilité.
+const BORNES_PERIODE = { AM:[8,12], PM:[12,16], SOIR:[16,22] };
+const JOURS_ABBR = { Lundi:'Lun', Mardi:'Mar', Mercredi:'Mer', Jeudi:'Jeu', Vendredi:'Ven' };
+
+/* --- Constantes du moteur de génération automatique (étape 7) --- */
+// R5 : profs permanents (plafond élevé). Tous les autres sont contractuels.
+const PROFS_PERMANENTS = ['Antonio Hilario','Nicolas Beland Latreille'];
+const MAX_COURS = { permanent:5, contractuel:2 }; // plafond de cours par session
+function nomCompletProf(p){ return p ? ((p.prenom||'')+' '+(p.nom||'')).trim() : ''; }
+// Statut effectif : champ explicite si présent, sinon déduit du nom.
+function statutProf(p){
+  if(p && p.statut) return p.statut;
+  return PROFS_PERMANENTS.includes(nomCompletProf(p)) ? 'permanent' : 'contractuel';
+}
+function plafondProf(p){ return MAX_COURS[statutProf(p)] || 2; }
+
+// Créneaux : [début, fin]. R3 : on débute à 9h ; 8h seulement en dernier recours.
+const GEN_SLOTS = { S8:[8,11], S9:[9,12], S12:[12,15], S13:[13,16], S16:[16,19], S17:[17,20] };
+const GEN_ORDRE_SLOTS = ['S9','S13','S12','S16','S17','S8']; // ordre de préférence
+// R2 : paires « deux cours qui se suivent » la même journée (toujours ≥1h de pause).
+const GEN_PAIRES = [['S9','S13'],['S12','S16'],['S13','S17']];
+// Préférence de local par étape : D2050→1-2, D2060→5-6, 3-4 partagent (repli permis).
+const PREF_LOCAL = { 1:['D2050','D2060'], 2:['D2050','D2060'], 3:['D2050','D2060'], 4:['D2060','D2050'], 5:['D2060','D2050'], 6:['D2060','D2050'] };
+
+// --- Modale générique ---
+function openModal(title, bodyHTML, footHTML){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = bodyHTML;
+  document.getElementById('modalFoot').innerHTML = footHTML;
+  const ov = document.getElementById('modalOverlay');
+  ov.classList.add('open'); ov.setAttribute('aria-hidden','false');
+}
+function closeModal(){
+  const ov = document.getElementById('modalOverlay');
+  ov.classList.remove('open'); ov.setAttribute('aria-hidden','true');
+  document.getElementById('modalBody').innerHTML = '';
+  document.getElementById('modalFoot').innerHTML = '';
+}
+
+/* ============================================================
+   ÉTAPE 6 — DÉTECTION DE CONFLITS
+   Deux cours sont en conflit s'ils se chevauchent dans le temps
+   (même jour, plages qui se recoupent) ET partagent soit le même
+   prof, soit le même local physique. Recalculé à chaque refreshAll.
+   ============================================================ */
+let _idsEnConflit = new Set(); // ids des cours impliqués dans au moins un conflit
+let _listeConflits = [];       // descriptions pour la bannière
+
+// Deux plages de 3 h se chevauchent-elles le même jour ?
+function seChevauchent(a, b){
+  if(a.debut==null || b.debut==null) return false;
+  if(a.jour !== b.jour) return false;
+  return a.debut < b.fin && b.debut < a.fin;
+}
+// Un cours en ligne n'occupe pas de salle physique : on l'exclut des conflits de local.
+function localPhysique(local){
+  const u = (local||'').trim().toUpperCase();
+  // COMODAL est un mode de prestation historique dans les données, pas une salle physique exclusive.
+  return u==='D2050' || u==='D2060';
+}
+// Demi-journées (AM/PM/SOIR) qu'un cours touche, selon ses heures.
+function periodesCours(c){
+  if(c.debut==null) return [];
+  return PERIODES.map(p=>p[0]).filter(code=>{
+    const [ps,pe] = BORNES_PERIODE[code];
+    return c.debut < pe && ps < c.fin;          // chevauchement plage/demi-journée
+  });
+}
+function detecterConflits(){
+  const ids = new Set();
+  const liste = [];
+  // On ne compare que les cours de la session affichée : un prof peut enseigner
+  // le lundi 9h à l'automne ET le lundi 9h à l'hiver sans que ce soit un conflit.
+  const cs = COURS.filter(c=> c.session===sessionActive);
+  for(let i=0; i<cs.length; i++){
+    for(let j=i+1; j<cs.length; j++){
+      const a = cs[i], b = cs[j];
+      if(!seChevauchent(a,b)) continue;
+      if(a.profId!=null && a.profId===b.profId){
+        ids.add(a.id); ids.add(b.id);
+        liste.push({ type:'prof', a, b });
+      }
+      if(localPhysique(a.local) && a.local.trim().toLowerCase()===b.local.trim().toLowerCase()){
+        ids.add(a.id); ids.add(b.id);
+        liste.push({ type:'local', a, b });
+      }
+    }
+  }
+  // Conflit prof/disponibilité : le prof n'est pas dispo dans une demi-journée que le cours touche.
+  // On ne juge que les profs dont les disponibilités sont renseignées (au moins une cochée).
+  cs.forEach(c=>{
+    if(c.profId==null) return;
+    const p = getProf(c.profId);
+    if(!p || !Array.isArray(p.dispos) || p.dispos.length===0) return;
+    const manquantes = periodesCours(c).filter(code=> !p.dispos.includes(c.jour+'|'+code));
+    if(manquantes.length){
+      ids.add(c.id);
+      liste.push({ type:'dispo', a:c, periodes:manquantes });
+    }
+  });
+  return { ids, liste };
+}
+function libelleConflit(k){
+  const j = k.a.jour;
+  if(k.type==='prof'){
+    return '<b>'+esc(profLabel(k.a.profId))+'</b> est assigné à deux cours en même temps le '+esc(j)+
+      ' : '+esc(k.a.numeroCours)+' ('+esc(k.a.plageHoraire)+') et '+esc(k.b.numeroCours)+' ('+esc(k.b.plageHoraire)+').';
+  }
+  if(k.type==='dispo'){
+    const noms = k.periodes.map(code=> PERIODES.find(p=>p[0]===code)[1].toLowerCase()).join(' et ');
+    return '<b>'+esc(profLabel(k.a.profId))+'</b> n\'est pas disponible le '+esc(j)+' ('+esc(noms)+
+      ') pour le cours '+esc(k.a.numeroCours)+' ('+esc(k.a.plageHoraire)+').';
+  }
+  return 'Le local <b>'+esc(k.a.local)+'</b> est occupé par deux cours en même temps le '+esc(j)+
+    ' : '+esc(k.a.numeroCours)+' ('+esc(k.a.plageHoraire)+') et '+esc(k.b.numeroCours)+' ('+esc(k.b.plageHoraire)+').';
+}
+function renderConflits(){
+  const box = document.getElementById('conflitsBanner');
+  if(!box) return;
+  if(_listeConflits.length===0){
+    box.innerHTML = '<div class="conflits-ok">✓ Aucun conflit d\'horaire détecté.</div>';
+    return;
+  }
+  const items = _listeConflits.map(k=>'<li>'+libelleConflit(k)+'</li>').join('');
+  const n = _listeConflits.length;
+  box.innerHTML =
+    '<div class="conflits-banner">'+
+      '<h4>⚠ '+n+' conflit'+(n>1?'s':'')+' d\'horaire détecté'+(n>1?'s':'')+'</h4>'+
+      '<ul>'+items+'</ul>'+
+    '</div>';
+}
+
+// Régénère toutes les vues après une modification de données (et sauvegarde)
+function refreshAll(){
+  const r = detecterConflits();        // d'abord : les vues s'en servent pour la surbrillance
+  _idsEnConflit = r.ids;
+  _listeConflits = r.liste;
+  renderConflits();
+  renderChips();
+  renderSchedule();
+  renderAllBodies();
+  renderProfs();
+  sauvegarder();
+}
+
+/* --- Formulaire de cours (ajout / modification) --- */
+function openCourseModal(courseId, etapePre){
+  const editing = courseId!=null;
+  const c = editing ? COURS.find(x=>x.id===courseId)
+                    : { etape: etapePre||ETAPES[0], numeroCours:'', section:'', nomCours:'',
+                        local:'D2050', jour:'Lundi', plageHoraire:'', modePrestation:'Comodal', profId:null };
+
+  const etapeOpts = ETAPES.map(e=>'<option value="'+e+'"'+(e===c.etape?' selected':'')+'>Étape '+e+'</option>').join('');
+  const jourOpts  = JOURS.map(j=>'<option'+(j===c.jour?' selected':'')+'>'+j+'</option>').join('');
+  const debutActuel = (c.debut!=null) ? c.debut : 9;
+  let debutOpts = '';
+  for(let h=8; h+DUREE_COURS<=22; h++){ debutOpts += '<option value="'+h+'"'+(h===debutActuel?' selected':'')+'>'+h+'h à '+(h+DUREE_COURS)+'h</option>'; }
+  // Listes déroulantes : options connues + valeur actuelle si elle n'y figure pas, présélectionnée.
+  const localList = LOCAUX_CONNUS.slice();
+  if(c.local && !localList.some(l=>l.toUpperCase()===c.local.toUpperCase())) localList.unshift(c.local);
+  const localOpts = localList.map(l=>'<option'+(l.toUpperCase()===(c.local||'').toUpperCase()?' selected':'')+'>'+esc(l)+'</option>').join('');
+  const modeList = MODES_CONNUS.slice();
+  if(c.modePrestation && !modeList.some(m=>m.toLowerCase()===c.modePrestation.toLowerCase())) modeList.unshift(c.modePrestation);
+  const modeOpts  = modeList.map(m=>'<option'+(m.toLowerCase()===(c.modePrestation||'').toLowerCase()?' selected':'')+'>'+esc(m)+'</option>').join('');
+  const profsTri  = [...PROFS].sort((a,b)=> (a.nom+a.prenom).localeCompare(b.nom+b.prenom,'fr'));
+  const profOpts  = '<option value="">— À confirmer / non assigné —</option>' +
+    profsTri.map(p=>'<option value="'+p.id+'"'+(p.id===c.profId?' selected':'')+'>'+esc((p.prenom+' '+p.nom).trim())+'</option>').join('');
+
+  const body =
+    '<div class="form-error" id="formErr"></div>'+
+    '<div class="form-grid">'+
+      '<div class="field"><label>Étape</label><select id="f-etape">'+etapeOpts+'</select></div>'+
+      '<div class="field"><label># cours</label><input id="f-num" value="'+esc(c.numeroCours)+'" placeholder="ex. 024642 ART"></div>'+
+      '<div class="field full"><label>Nom du cours</label><input id="f-nom" value="'+esc(c.nomCours)+'" placeholder="ex. Dessin"></div>'+
+      '<div class="field"><label>Section <span class="hint">(optionnel)</span></label><input id="f-section" value="'+esc(c.section)+'" placeholder="ex. S.010"></div>'+
+      '<div class="field"><label>Jour</label><select id="f-jour">'+jourOpts+'</select></div>'+
+      '<div class="field"><label>Heure de début <span class="hint">(durée fixe 3 h)</span></label><select id="f-debut">'+debutOpts+'</select></div>'+
+      '<div class="field"><label>Local</label><select id="f-local">'+localOpts+'</select></div>'+
+      '<div class="field"><label>Mode de prestation</label><select id="f-mode">'+modeOpts+'</select></div>'+
+      '<div class="field full"><label>Professeur <span class="hint">(choisir = réaffecter)</span></label><select id="f-prof">'+profOpts+'</select></div>'+
+    '</div>';
+
+  let foot = '';
+  if(editing) foot += '<button class="btn btn-danger foot-left" onclick="supprimerCours('+c.id+')">Supprimer</button>';
+  foot += '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>'+
+          '<button class="btn btn-primary" onclick="enregistrerCours('+(editing?c.id:'null')+')">Enregistrer</button>';
+
+  openModal(editing ? 'Modifier le cours' : 'Ajouter un cours', body, foot);
+}
+
+function enregistrerCours(courseId){
+  const num   = document.getElementById('f-num').value.trim();
+  const nom   = document.getElementById('f-nom').value.trim();
+  if(!num || !nom){
+    const err = document.getElementById('formErr');
+    err.textContent = 'Le numéro et le nom du cours sont obligatoires.'; err.classList.add('show');
+    return;
+  }
+  // Durée fixe : on choisit l'heure de début, la fin et la plage texte se calculent.
+  const debut = parseInt(document.getElementById('f-debut').value,10);
+  const fin = debut + DUREE_COURS;
+  const plageHoraire = debut+'h à '+fin+'h';
+  const vals = {
+    etape: parseInt(document.getElementById('f-etape').value,10),
+    numeroCours: num,
+    section: document.getElementById('f-section').value.trim(),
+    nomCours: nom,
+    jour: document.getElementById('f-jour').value,
+    plageHoraire,
+    local: document.getElementById('f-local').value.trim(),
+    modePrestation: document.getElementById('f-mode').value.trim(),
+    profId: document.getElementById('f-prof').value ? parseInt(document.getElementById('f-prof').value,10) : null
+  };
+  if(courseId!=null){
+    const c = COURS.find(x=>x.id===courseId);
+    Object.assign(c, vals, {debut, fin});
+  } else {
+    COURS.push({ id: nextCoursId(), ...vals, debut, fin, session: sessionActive, verrou:false });
+  }
+  closeModal();
+  refreshAll();
+}
+
+function supprimerCours(courseId){
+  const c = COURS.find(x=>x.id===courseId);
+  if(!c) return;
+  if(!confirm('Supprimer le cours « '+c.nomCours+' » ('+c.numeroCours+') ?')) return;
+  const i = COURS.findIndex(x=>x.id===courseId);
+  COURS.splice(i,1);
+  closeModal();
+  refreshAll();
+}
+
+/* --- Disponibilités : état de travail temporaire pendant l'ouverture de la modale --- */
+let _dispoTemp = new Set();
+function toggleDispo(el, jour, code){
+  const key = jour+'|'+code;
+  if(_dispoTemp.has(key)){ _dispoTemp.delete(key); el.classList.remove('sel'); }
+  else { _dispoTemp.add(key); el.classList.add('sel'); }
+}
+// Construit la grille 5 jours × 3 demi-journées
+function buildDispoGrid(){
+  let h = '<div class="dispo-corner"></div>';
+  JOURS.forEach(j=> h += '<div class="dispo-head">'+JOURS_ABBR[j]+'</div>');
+  PERIODES.forEach(([code,label])=>{
+    h += '<div class="dispo-rowlabel">'+label+'</div>';
+    JOURS.forEach(j=>{
+      const sel = _dispoTemp.has(j+'|'+code) ? ' sel' : '';
+      h += '<div class="dispo-cell'+sel+'" onclick="toggleDispo(this,\''+j+'\',\''+code+'\')" title="'+j+' — '+label+'"></div>';
+    });
+  });
+  return '<div class="dispo-grid">'+h+'</div>';
+}
+
+/* --- Cours enseignés + qualifications --- */
+// Catalogue : un cours distinct par numéro (premier nom rencontré), trié.
+function catalogueCours(){
+  const map = new Map();
+  COURS.forEach(c=>{ if(c.numeroCours && !map.has(c.numeroCours)) map.set(c.numeroCours, c.nomCours); });
+  return [...map.entries()].map(([num,nom])=>({num,nom}))
+    .sort((a,b)=> a.num.localeCompare(b.num,'fr'));
+}
+function coursDuProf(id){ return COURS.filter(c=> c.profId===id); }
+
+// Bloc lecture seule : cours assignés à ce prof en ce moment.
+function buildEnseignes(profId){
+  const list = profId!=null ? coursDuProf(profId) : [];
+  if(!list.length) return '<p class="qualif-empty">Aucun cours assigné pour l\'instant.</p>';
+  return '<ul class="enseignes-list">'+ list.map(c=>
+    '<li><span class="badge-etape mini">É'+c.etape+'</span>'+esc(c.numeroCours)+
+    (c.section?' <span class="muted">'+esc(c.section)+'</span>':'')+' — '+esc(c.nomCours)+
+    ' <span class="muted">('+esc(c.jour)+', '+esc(c.plageHoraire)+')</span></li>'
+  ).join('')+'</ul>';
+}
+
+// Liste à cocher : tous les cours distincts. Les cours enseignés sont pré-cochés et marqués.
+function buildQualifList(profId){
+  const cat = catalogueCours();
+  if(!cat.length) return '<p class="qualif-empty">Aucun cours dans l\'outil pour l\'instant.</p>';
+  const enseignes = new Set((profId!=null?coursDuProf(profId):[]).map(c=>c.numeroCours));
+  return '<div class="qualif-list">'+ cat.map(c=>{
+    const taught  = enseignes.has(c.num);
+    const checked = _qualifTemp.has(c.num) || taught;
+    return '<label class="qualif-item'+(taught?' taught':'')+'">'+
+      '<input type="checkbox" class="q-check" data-num="'+esc(c.num)+'"'+(checked?' checked':'')+'>'+
+      '<span class="q-label">'+esc(c.num)+' — '+esc(c.nom)+'</span>'+
+      (taught?'<span class="taught-badge">enseigné</span>':'')+
+    '</label>';
+  }).join('')+'</div>';
+}
+
+/* --- Formulaire de prof (ajout / modification) --- */
+let _qualifTemp = new Set();
+function openProfModal(profId){
+  const editing = profId!=null;
+  const p = editing ? getProf(profId) : { prenom:'', nom:'', courriel:'', telephone:'', dispos:[], qualifications:[] };
+  _dispoTemp = new Set(p.dispos || []);
+  _qualifTemp = new Set(p.qualifications || []);
+  const body =
+    '<div class="form-error" id="formErr"></div>'+
+    '<div class="form-grid">'+
+      '<div class="field"><label>Prénom</label><input id="p-prenom" value="'+esc(p.prenom)+'"></div>'+
+      '<div class="field"><label>Nom</label><input id="p-nom" value="'+esc(p.nom)+'"></div>'+
+      '<div class="field full"><label>Courriel</label><input id="p-courriel" value="'+esc(p.courriel)+'" placeholder="prenom.nom@exemple.com"></div>'+
+      '<div class="field"><label>Numéro du prof <span class="hint">(tél. / poste)</span></label><input id="p-tel" value="'+esc(p.telephone)+'"></div>'+
+      '<div class="field"><label>Statut <span class="hint">(plafond de cours — R5)</span></label>'+
+        '<select id="p-statut">'+
+          '<option value=""'+(p.statut?'':' selected')+'>— Auto ('+statutProf(p)+', max '+plafondProf(p)+') —</option>'+
+          '<option value="permanent"'+(p.statut==='permanent'?' selected':'')+'>Permanent (max '+MAX_COURS.permanent+')</option>'+
+          '<option value="contractuel"'+(p.statut==='contractuel'?' selected':'')+'>Contractuel (max '+MAX_COURS.contractuel+')</option>'+
+        '</select></div>'+
+      '<div class="field full"><label>Disponibilités <span class="hint">(cliquez les demi-journées où le prof est disponible)</span></label>'+buildDispoGrid()+'</div>'+
+      '<div class="field full"><label>Cours présentement assignés <span class="hint">(automatique — se change via la fiche d\'un cours ou le générateur, pas ici)</span></label>'+buildEnseignes(profId)+'</div>'+
+      '<div class="field full"><label>Cours que ce prof PEUT enseigner <span class="hint">(cocher = qualification pour le générateur ; ça n\'assigne pas le cours et ne change pas la liste ci-dessus)</span></label>'+buildQualifList(profId)+'</div>'+
+    '</div>';
+  let foot = '';
+  if(editing){
+    const n = nbCoursProf(profId);
+    foot += '<button class="btn btn-danger foot-left" onclick="supprimerProf('+profId+')">Supprimer'+(n?' ('+n+' cours)':'')+'</button>';
+  }
+  foot += '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>'+
+          '<button class="btn btn-primary" onclick="enregistrerProf('+(editing?profId:'null')+')">Enregistrer</button>';
+  openModal(editing ? 'Modifier le prof' : 'Ajouter un prof', body, foot);
+}
+
+function enregistrerProf(profId){
+  const prenom = document.getElementById('p-prenom').value.trim();
+  const nom    = document.getElementById('p-nom').value.trim();
+  if(!prenom && !nom){
+    const err = document.getElementById('formErr');
+    err.textContent = 'Indiquez au moins un prénom ou un nom.'; err.classList.add('show');
+    return;
+  }
+  const qualifications = Array.from(document.querySelectorAll('#modalBody .q-check'))
+    .filter(cb=> cb.checked).map(cb=> cb.dataset.num);
+  const vals = {
+    prenom, nom,
+    courriel: document.getElementById('p-courriel').value.trim(),
+    telephone: document.getElementById('p-tel').value.trim(),
+    statut: document.getElementById('p-statut').value, // '' = auto (déduit du nom)
+    dispos: Array.from(_dispoTemp),
+    qualifications
+  };
+  if(profId!=null){
+    Object.assign(getProf(profId), vals);
+  } else {
+    PROFS.push({ id: nextProfId(), ...vals });
+  }
+  closeModal();
+  refreshAll();
+}
+
+function supprimerProf(profId){
+  const p = getProf(profId); if(!p) return;
+  const n = nbCoursProf(profId);
+  const msg = n
+    ? 'Supprimer '+(p.prenom+' '+p.nom).trim()+' ? '+n+' cours sera/seront marqué(s) « À confirmer ».'
+    : 'Supprimer '+(p.prenom+' '+p.nom).trim()+' ?';
+  if(!confirm(msg)) return;
+  COURS.forEach(c=>{ if(c.profId===profId) c.profId = null; }); // désassigner
+  PROFS.splice(PROFS.findIndex(x=>x.id===profId), 1);
+  closeModal();
+  refreshAll();
+}
+
+/* --- Vue corps professoral --- */
+function renderProfs(){
+  const cont = document.getElementById('profsContainer');
+  const tri = [...PROFS].sort((a,b)=> (a.nom+a.prenom).localeCompare(b.nom+b.prenom,'fr'));
+  let rows = tri.map(p=>{
+    const mail = p.courriel ? '<a class="email-link" href="mailto:'+esc(p.courriel)+'">'+esc(p.courriel)+'</a>' : '<span class="muted">—</span>';
+    const tel = p.telephone ? esc(p.telephone) : '<span class="muted">—</span>';
+    return '<tr>'+
+      '<td>'+esc(p.prenom||'')+'</td>'+
+      '<td>'+esc(p.nom||'')+'</td>'+
+      '<td>'+mail+'</td>'+
+      '<td>'+tel+'</td>'+
+      '<td>'+nbCoursProf(p.id)+'</td>'+
+      '<td class="td-actions"><button class="icon-btn" data-admin-only title="Modifier" data-pedit="'+p.id+'">✎</button>'+
+      '<button class="icon-btn icon-btn-danger" data-admin-only title="Supprimer" data-pdel="'+p.id+'">🗑</button></td></tr>';
+  }).join('');
+  if(!rows) rows = '<tr><td colspan="6" class="muted" style="text-align:center;padding:24px;">Aucun prof. Cliquez « Ajouter un prof ».</td></tr>';
+  cont.innerHTML =
+    '<div class="table-container"><div style="overflow-x:auto"><table class="data-table">'+
+    '<thead><tr><th class="th-actions" style="text-align:left">Prénom</th>'+
+    '<th class="th-actions" style="text-align:left">Nom</th>'+
+    '<th class="th-actions" style="text-align:left">Courriel</th>'+
+    '<th class="th-actions" style="text-align:left">Numéro du prof</th>'+
+    '<th class="th-actions" style="text-align:left">Cours</th>'+
+    '<th class="th-actions">Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  cont.querySelectorAll('[data-pedit]').forEach(b=> b.onclick = ()=> openProfModal(+b.dataset.pedit));
+  cont.querySelectorAll('[data-pdel]').forEach(b=> b.onclick = ()=> supprimerProf(+b.dataset.pdel));
+}
+
+/* ============================================================
+   ÉTAPE 7 — GÉNÉRATION AUTOMATIQUE DE L'HORAIRE — MOTEUR V2
+   Version bonifiée : diagnostic, contraintes dures/souples,
+   recherche par faisceau (beam search), propositions multiples,
+   score global, simulation avant application.
+   ============================================================ */
+
+// Seules D2050 / D2060 sont des salles physiques exclusives (une classe à la fois).
+function salleExclusive(local){ const u=(local||'').toUpperCase(); return u==='D2050' || u==='D2060'; }
+// R4 : français / anglais jamais en D2050 ou D2060.
+function estLangue(c){ return /FRA|ENL/i.test(c.numeroCours||'') || /fran|anglais|english/i.test(c.nomCours||''); }
+function estEnLigne(c){ return /ligne/i.test(c.local||'') || /ligne/i.test(c.modePrestation||''); }
+function estStage(c){ return /stage/i.test(c.modePrestation||'') || /stage/i.test(c.nomCours||''); }
+function cloneData(o){ return JSON.parse(JSON.stringify(o)); }
+function coursRef(id, coursList){ return coursList.find(c=>c.id===id); }
+function profRef(id, profsList){ return profsList.find(p=>p.id===id) || null; }
+function nomProfFromList(id, profsList){ const p=profRef(id, profsList||PROFS); return p ? ((p.prenom||'')+' '+(p.nom||'')).trim() : 'À confirmer'; }
+function statutProfFromList(p){ if(p && p.statut) return p.statut; return PROFS_PERMANENTS.includes(nomCompletProf(p)) ? 'permanent' : 'contractuel'; }
+function plafondProfFromList(p){ return MAX_COURS[statutProfFromList(p)] || 2; }
+
+// Configuration centralisée : plus facile à ajuster que des valeurs dispersées dans le code.
+const CONFIG_GENERATION = {
+  beamWidth: 220,              // nombre de scénarios partiels conservés à chaque étape
+  maxOptionsParCours: 18,      // limite les options par cours pour garder l'app fluide dans le navigateur
+  maxPropositions: 5,
+  poids: {
+    base: 10000,
+    coursNonPlace: -900,
+    conflitDur: -5000,
+    surchargeProf: -220,
+    profNonQualifie: -180,
+    dispoInconnue: -18,
+    dispoManquante: -500,
+    coursSoir: -34,
+    cours8h: -45,
+    vendredi: -22,
+    localNonPreferentiel: -28,
+    trouEtape: -24,
+    matinEtSoir: -70,
+    paireIdeale: 65,
+    contractuelRegroupe: 120,
+    permanentRegroupe: 35,
+    jourEquilibre: 12
+  }
+};
+
+// Demi-journées (AM/PM/SOIR) touchées par un créneau.
+function demiJourneesSlot(slot){
+  const sf = GEN_SLOTS[slot];
+  if(!sf) return [];
+  const [d,f]=sf;
+  return PERIODES.map(p=>p[0]).filter(code=>{ const [ps,pe]=BORNES_PERIODE[code]; return d<pe && ps<f; });
+}
+function demiJourneesPlage(debut, fin){
+  if(debut==null || fin==null) return [];
+  return PERIODES.map(p=>p[0]).filter(code=>{ const [ps,pe]=BORNES_PERIODE[code]; return debut<pe && ps<fin; });
+}
+// R1 : au moins 1h de pause entre deux créneaux d'une même étape.
+function gapOkPlage(d1,f1,d2,f2){
+  if(d1==null || f1==null || d2==null || f2==null) return true;
+  if(d1 < f2 && d2 < f1) return false;
+  return d1<=d2 ? (d2-f1)>=1 : (d1-f2)>=1;
+}
+function gapOk(s1,s2){
+  if(!GEN_SLOTS[s1] || !GEN_SLOTS[s2]) return true;
+  const [d1,f1]=GEN_SLOTS[s1], [d2,f2]=GEN_SLOTS[s2];
+  return gapOkPlage(d1,f1,d2,f2);
+}
+function matinEtSoirSlots(s1,s2){
+  if(!GEN_SLOTS[s1] || !GEN_SLOTS[s2]) return false;
+  const lo=Math.min(GEN_SLOTS[s1][0],GEN_SLOTS[s2][0]);
+  const hi=Math.max(GEN_SLOTS[s1][0],GEN_SLOTS[s2][0]);
+  return lo<12 && hi>=16;
+}
+function estPaire(s1,s2){ return GEN_PAIRES.some(([a,b])=>(a===s1&&b===s2)||(a===s2&&b===s1)); }
+function slotFromPlage(debut, fin){ return GEN_ORDRE_SLOTS.find(s=> GEN_SLOTS[s] && GEN_SLOTS[s][0]===debut && GEN_SLOTS[s][1]===fin) || null; }
+function localPourCours(c, local){ return local || (estLangue(c) ? 'COMODAL' : (estEnLigne(c) ? 'EN LIGNE' : 'D2050')); }
+function modeDepuisLocal(local, cours){ return local==='EN LIGNE' ? 'En ligne' : (estStage(cours) ? 'Stage' : 'Comodal'); }
+function profQualifiePourCours(prof, c){
+  if(!prof || !Array.isArray(prof.qualifications) || prof.qualifications.length===0) return false;
+  return prof.qualifications.includes(c.numeroCours);
+}
+function disponibiliteConnue(prof){ return !!(prof && Array.isArray(prof.dispos) && prof.dispos.length>0); }
+function profDispoPlage(prof, jour, debut, fin){
+  if(!prof || !disponibiliteConnue(prof)) return true;
+  return demiJourneesPlage(debut,fin).every(code=> prof.dispos.includes(jour+'|'+code));
+}
+
+function analyserFaisabilite(joursPermis){
+  joursPermis = joursPermis && joursPermis.length ? joursPermis : JOURS.slice();
+  const warnings = [];
+  const erreurs = [];
+  const cs = COURS.filter(c=>c.session===sessionActive && !estStage(c));
+  const nonVerrouilles = cs.filter(c=>!c.verrou);
+  const capaciteEtape = joursPermis.length * 2; // règle max 2 cours / étape / jour
+  ETAPES.forEach(e=>{
+    const n = cs.filter(c=>c.etape===e).length;
+    if(n>capaciteEtape) erreurs.push('Étape '+e+' : '+n+' cours pour une capacité indicative de '+capaciteEtape+' cours avec les jours choisis.');
+  });
+  const sansProf = cs.filter(c=>c.profId==null && !estStage(c));
+  if(sansProf.length) warnings.push(sansProf.length+' cours sans professeur assigné. Le moteur tentera une assignation par qualifications.');
+  const profSansDispo = PROFS.filter(p=> cs.some(c=>c.profId===p.id) && !disponibiliteConnue(p));
+  if(profSansDispo.length) warnings.push(profSansDispo.length+' prof(s) assigné(s) sans disponibilités renseignées. Ces cas seront permis, mais pénalisés.');
+  const charges = {};
+  PROFS.forEach(p=> charges[p.id]=cs.filter(c=>c.profId===p.id).length);
+  PROFS.forEach(p=>{ if((charges[p.id]||0)>plafondProf(p)) warnings.push(nomCompletProf(p)+' dépasse son plafond : '+charges[p.id]+'/'+plafondProf(p)+' cours.'); });
+  cs.forEach(c=>{
+    const p = c.profId!=null ? getProf(c.profId) : null;
+    if(p && Array.isArray(p.qualifications) && p.qualifications.length && !profQualifiePourCours(p,c)){
+      warnings.push(nomCompletProf(p)+' est assigné à '+c.numeroCours+', mais ce cours n\'est pas coché dans ses qualifications.');
+    }
+  });
+  return { erreurs, warnings, nbCours:cs.length, nbAPlacer:nonVerrouilles.length, nbVerrouilles:cs.length-nonVerrouilles.length, joursPermis };
+}
+
+function diagnosticHTML(diag){
+  let h = '<div class="conflits-ok" style="margin-bottom:14px;">Analyse : '+diag.nbAPlacer+' cours à placer, '+diag.nbVerrouilles+' verrouillé'+(diag.nbVerrouilles>1?'s':'')+', '+diag.joursPermis.length+' jour'+(diag.joursPermis.length>1?'s':'')+' permis.</div>';
+  if(diag.erreurs.length){
+    h += '<div class="conflits-banner"><h4>⚠ Risques de faisabilité</h4><ul>'+diag.erreurs.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
+  }
+  if(diag.warnings.length){
+    h += '<div class="conflits-banner" style="background:rgba(213,160,33,.12);border-color:#d5a021;border-left-color:#d5a021;"><h4 style="color:#d5a021;">⚠ Points à surveiller</h4><ul>'+diag.warnings.slice(0,8).map(x=>'<li>'+esc(x)+'</li>').join('')+(diag.warnings.length>8?'<li>… '+(diag.warnings.length-8)+' autre(s) avertissement(s)</li>':'')+'</ul></div>';
+  }
+  return h;
+}
+
+function construireCoursSimulation(joursPermis){
+  const cours = cloneData(COURS.filter(c=>c.session===sessionActive));
+  const profs = cloneData(PROFS);
+  const charge = {};
+  profs.forEach(p=> charge[p.id] = cours.filter(c=>c.profId===p.id && !estStage(c)).length);
+  // Assignation simulée seulement : les données vivantes ne sont pas modifiées tant que l'utilisateur n'applique pas une proposition.
+  cours.forEach(c=>{
+    if(c.profId!=null || estStage(c)) return;
+    const cand = profs.filter(p=> profQualifiePourCours(p,c) && (charge[p.id]||0) < plafondProfFromList(p))
+      .sort((a,b)=> (charge[a.id]||0)-(charge[b.id]||0) || (disponibiliteConnue(b)?1:0)-(disponibiliteConnue(a)?1:0));
+    if(cand.length){ c.profId = cand[0].id; c._profAssigneAuto = true; charge[cand[0].id]++; }
+  });
+  return { cours, profs };
+}
+
+function ordreCoursAPlacer(cours, profs){
+  function nbOptionsBrut(c){
+    if(estStage(c) || c.verrou) return 999;
+    const p = c.profId!=null ? profRef(c.profId,profs) : null;
+    const dispo = disponibiliteConnue(p) ? p.dispos.length : 15;
+    const qual = c.profId==null ? 30 : 0;
+    return dispo + qual + (estLangue(c)||estEnLigne(c)?4:0);
+  }
+  return cours.filter(c=>!estStage(c) && !c.verrou).sort((a,b)=> nbOptionsBrut(a)-nbOptionsBrut(b) || a.etape-b.etape || (a.profId||0)-(b.profId||0));
+}
+
+function creerEtatInitial(cours){
+  const placements = [];
+  cours.filter(c=>c.verrou && !estStage(c) && c.jour && c.debut!=null).forEach(c=>{
+    placements.push({ courseId:c.id, profId:c.profId, etape:c.etape, jour:c.jour, debut:c.debut, fin:c.fin, slot:slotFromPlage(c.debut,c.fin), local:c.local, verrou:true });
+  });
+  return { placements, unplaced:[], scorePartiel:0, notes:[] };
+}
+
+function chevauche(p, jour, debut, fin){ return p.jour===jour && debut<p.fin && p.debut<fin; }
+function placementsDuCoursEtat(etat, courseId){ return etat.placements.find(p=>p.courseId===courseId); }
+
+function optionValideDure(c, opt, etat){
+  // Un prof ne peut pas enseigner deux cours au même moment.
+  if(opt.profId!=null && etat.placements.some(p=>p.profId===opt.profId && chevauche(p,opt.jour,opt.debut,opt.fin))) return false;
+  // Une salle physique exclusive ne peut pas accueillir deux cours au même moment.
+  if(salleExclusive(opt.local) && etat.placements.some(p=>salleExclusive(p.local) && p.local.toUpperCase()===opt.local.toUpperCase() && chevauche(p,opt.jour,opt.debut,opt.fin))) return false;
+  // Maximum 2 cours par étape par jour.
+  const voisinsEtape = etat.placements.filter(p=>p.etape===c.etape && p.jour===opt.jour);
+  if(voisinsEtape.length>=2) return false;
+  // Pause minimale d'une heure pour les cours d'une même étape dans la même journée.
+  if(voisinsEtape.some(p=>!gapOkPlage(opt.debut,opt.fin,p.debut,p.fin))) return false;
+  return true;
+}
+
+function construireOptionsCours(c, etat, profs, joursPermis, prefs){
+  const options = [];
+  const prof = c.profId!=null ? profRef(c.profId,profs) : null;
+  const locaux = estLangue(c) ? ['COMODAL'] : (estEnLigne(c) ? ['EN LIGNE'] : (PREF_LOCAL[c.etape] || ['D2050','D2060']));
+  joursPermis.forEach(jour=>{
+    GEN_ORDRE_SLOTS.forEach(slot=>{
+      const [debut,fin] = GEN_SLOTS[slot];
+      if(prof && disponibiliteConnue(prof) && !profDispoPlage(prof,jour,debut,fin)) return;
+      locaux.forEach(local=>{
+        const opt = { courseId:c.id, profId:c.profId, etape:c.etape, jour, slot, debut, fin, local:localPourCours(c, local), verrou:false };
+        if(!optionValideDure(c,opt,etat)) return;
+        opt.scoreLocal = scoreLocalOption(c,opt,etat,prof,prefs);
+        options.push(opt);
+      });
+    });
+  });
+  options.sort((a,b)=>b.scoreLocal-a.scoreLocal);
+  return options.slice(0, CONFIG_GENERATION.maxOptionsParCours);
+}
+
+function scoreLocalOption(c,opt,etat,prof,prefs){
+  let s = 0;
+  const voisins = etat.placements.filter(p=>p.etape===c.etape && p.jour===opt.jour);
+  voisins.forEach(v=>{
+    if(estPaire(opt.slot,v.slot)) s += CONFIG_GENERATION.poids.paireIdeale;
+    if(matinEtSoirSlots(opt.slot,v.slot)) s += CONFIG_GENERATION.poids.matinEtSoir;
+  });
+  if(opt.slot==='S9') s += 28;
+  if(opt.slot==='S13') s += 20;
+  if(opt.slot==='S8') s += CONFIG_GENERATION.poids.cours8h;
+  if(opt.debut>=16) s += CONFIG_GENERATION.poids.coursSoir;
+  if(opt.jour==='Vendredi' && prefs.eviterVendredi) s += CONFIG_GENERATION.poids.vendredi;
+  const prefLocaux = PREF_LOCAL[c.etape] || [];
+  if(salleExclusive(opt.local) && prefLocaux[0] && opt.local!==prefLocaux[0]) s += CONFIG_GENERATION.poids.localNonPreferentiel;
+  if(prof && !disponibiliteConnue(prof)) s += CONFIG_GENERATION.poids.dispoInconnue;
+  if(prof && disponibiliteConnue(prof) && !profDispoPlage(prof,opt.jour,opt.debut,opt.fin)) s += CONFIG_GENERATION.poids.dispoManquante;
+  if(prof && Array.isArray(prof.qualifications) && prof.qualifications.length && !profQualifiePourCours(prof,c)) s += CONFIG_GENERATION.poids.profNonQualifie;
+  if(opt.profId!=null && etat.placements.some(p=>p.profId===opt.profId && p.jour===opt.jour)){
+    s += (statutProfFromList(prof)==='contractuel') ? CONFIG_GENERATION.poids.contractuelRegroupe : CONFIG_GENERATION.poids.permanentRegroupe;
+  }
+  // Départage stable : jours et créneaux plus tôt, sans imposer brutalement la règle.
+  s -= JOURS.indexOf(opt.jour)*0.3;
+  s -= GEN_ORDRE_SLOTS.indexOf(opt.slot)*0.1;
+  return s;
+}
+
+function signatureEtat(etat){
+  return etat.placements.map(p=>p.courseId+':'+p.jour+'-'+p.debut+'-'+p.local+'-'+(p.profId||'')).sort().join('|') + '|U:' + etat.unplaced.map(c=>c.id).sort().join(',');
+}
+
+function scoreGlobalEtat(etat, cours, profs, prefs){
+  let score = CONFIG_GENERATION.poids.base + etat.scorePartiel;
+  const avertissements = [];
+  const soft = [];
+  if(etat.unplaced.length){
+    score += etat.unplaced.length * CONFIG_GENERATION.poids.coursNonPlace;
+    etat.unplaced.forEach(c=> avertissements.push('Non placé : '+c.numeroCours+' — '+c.nomCours+'.'));
+  }
+  // Diagnostics par placement.
+  etat.placements.forEach(p=>{
+    const c = coursRef(p.courseId,cours); if(!c) return;
+    const prof = p.profId!=null ? profRef(p.profId,profs) : null;
+    if(p.debut===8) soft.push('Cours à 8 h : '+c.numeroCours+'.');
+    if(p.debut>=16) soft.push('Cours en soirée : '+c.numeroCours+'.');
+    if(p.jour==='Vendredi' && prefs.eviterVendredi) soft.push('Cours placé le vendredi : '+c.numeroCours+'.');
+    const prefLocaux = PREF_LOCAL[c.etape] || [];
+    if(salleExclusive(p.local) && prefLocaux[0] && p.local!==prefLocaux[0]) soft.push('Local non préférentiel pour '+c.numeroCours+' : '+p.local+'.');
+    if(prof && !disponibiliteConnue(prof)) soft.push('Disponibilité inconnue : '+nomCompletProf(prof)+' pour '+c.numeroCours+'.');
+    if(prof && Array.isArray(prof.qualifications) && prof.qualifications.length && !profQualifiePourCours(prof,c)) avertissements.push('Qualification à vérifier : '+nomCompletProf(prof)+' pour '+c.numeroCours+'.');
+    if(c._profAssigneAuto) soft.push('Prof assigné automatiquement : '+nomProfFromList(p.profId,profs)+' pour '+c.numeroCours+'.');
+  });
+  // Surcharge par professeur.
+  profs.forEach(prof=>{
+    const n = cours.filter(c=>!estStage(c) && c.profId===prof.id).length;
+    if(n>plafondProfFromList(prof)){
+      score += (n-plafondProfFromList(prof))*CONFIG_GENERATION.poids.surchargeProf;
+      avertissements.push('Surcharge : '+nomCompletProf(prof)+' a '+n+'/'+plafondProfFromList(prof)+' cours.');
+    }
+  });
+  // Regroupement des contractuels : forte prime si leurs cours sont sur une même journée.
+  profs.forEach(prof=>{
+    if(statutProfFromList(prof)!=='contractuel') return;
+    const ps = etat.placements.filter(p=>p.profId===prof.id);
+    if(ps.length>=2){
+      const jours = new Set(ps.map(p=>p.jour));
+      if(jours.size===1) score += CONFIG_GENERATION.poids.contractuelRegroupe;
+      else { score -= (jours.size-1)*55; soft.push('Contractuel non regroupé : '+nomCompletProf(prof)+' sur '+jours.size+' jours.'); }
+    }
+  });
+  // Équilibre par étape : éviter des journées inutilement éclatées.
+  ETAPES.forEach(e=>{
+    const byDay = {};
+    etat.placements.filter(p=>p.etape===e).forEach(p=> byDay[p.jour]=(byDay[p.jour]||0)+1);
+    Object.values(byDay).forEach(n=>{ if(n===2) score += CONFIG_GENERATION.poids.jourEquilibre; });
+  });
+  return { score:Math.round(score), avertissements, soft };
+}
+
+function genererPropositions(opts){
+  opts = opts || {};
+  const joursPermis = (opts.jours && opts.jours.length) ? opts.jours : JOURS.slice();
+  const prefs = {
+    eviterVendredi: !!opts.eviterVendredi || /vendredi/i.test(opts.regleSpeciale||''),
+    eviterSoir: !!opts.eviterSoir || /soir|soirée|après 16|apres 16/i.test(opts.regleSpeciale||''),
+    regrouperContractuels: opts.regrouperContractuels!==false
+  };
+  const data = construireCoursSimulation(joursPermis);
+  const cours = data.cours;
+  const profs = data.profs;
+  const ordre = ordreCoursAPlacer(cours,profs);
+  let etats = [creerEtatInitial(cours)];
+
+  ordre.forEach(c=>{
+    const prochains = [];
+    etats.forEach(etat=>{
+      const options = construireOptionsCours(c,etat,profs,joursPermis,prefs);
+      if(!options.length){
+        const e2 = { placements:etat.placements.slice(), unplaced:etat.unplaced.concat([c]), scorePartiel:etat.scorePartiel+CONFIG_GENERATION.poids.coursNonPlace, notes:etat.notes.concat(['Aucune option valide pour '+c.numeroCours]) };
+        prochains.push(e2);
+        return;
+      }
+      options.forEach(opt=>{
+        prochains.push({ placements:etat.placements.concat([opt]), unplaced:etat.unplaced.slice(), scorePartiel:etat.scorePartiel+opt.scoreLocal, notes:etat.notes.slice() });
+      });
+    });
+    const vus = new Set();
+    etats = prochains
+      .sort((a,b)=>b.scorePartiel-a.scorePartiel)
+      .filter(e=>{ const sig=signatureEtat(e); if(vus.has(sig)) return false; vus.add(sig); return true; })
+      .slice(0, CONFIG_GENERATION.beamWidth);
+  });
+
+  const proposes = etats.map(etat=>{
+    const g = scoreGlobalEtat(etat,cours,profs,prefs);
+    return { etat, score:g.score, avertissements:g.avertissements, soft:g.soft, cours, profs, joursPermis, prefs, regle:opts.regleSpeciale||'' };
+  }).sort((a,b)=>b.score-a.score).slice(0, opts.nbPropositions || CONFIG_GENERATION.maxPropositions);
+
+  return { propositions:proposes, diagnostic:analyserFaisabilite(joursPermis), joursPermis, regle:opts.regleSpeciale||'' };
+}
+
+let _dernieresPropositions = [];
+
+function appliquerProposition(index){
+  const prop = _dernieresPropositions[index];
+  if(!prop){ alert('Proposition introuvable. Relancez la génération.'); return; }
+  const coursSim = prop.cours;
+  // Applique les assignations simulées de prof, puis les placements proposés aux données vivantes de la session.
+  coursSim.forEach(cs=>{
+    const c = COURS.find(x=>x.id===cs.id);
+    if(!c || c.session!==sessionActive || estStage(c) || c.verrou) return;
+    c.profId = cs.profId;
+  });
+  prop.etat.placements.forEach(p=>{
+    const c = COURS.find(x=>x.id===p.courseId);
+    if(!c || c.verrou) return;
+    c.jour = p.jour;
+    c.debut = p.debut;
+    c.fin = p.fin;
+    c.plageHoraire = p.debut+'h à '+p.fin+'h';
+    c.local = p.local;
+    c.modePrestation = modeDepuisLocal(p.local,c);
+  });
+  closeModal();
+  buildListe();
+  renderLegend();
+  refreshAll();
+  alert('Proposition '+(index+1)+' appliquée et sauvegardée automatiquement.');
+}
+
+// Export Excel coloré (SpreadsheetML 2003, hors-ligne) : 2 feuilles — Liste des cours + Grille par étape.
+// Couleurs des locaux conformes à la charte : D2050 vert, D2060 mauve, EN LIGNE or, COMODAL corail.
+function exporterExcel(){
+  const S = SESSIONS[sessionActive];
+  const xmlEsc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const NL = '&#10;';
+  const LOC = {
+    D2050:{bg:'#366E58',fg:'#FFFFFF'},
+    D2060:{bg:'#694966',fg:'#FFFFFF'},
+    ENLIGNE:{bg:'#D5A021',fg:'#1A1A1A'},
+    COMODAL:{bg:'#E3655B',fg:'#FFFFFF'},
+    DEF:{bg:'#6B7280',fg:'#FFFFFF'}
+  };
+  function locKey(local){
+    const u=(local||'').toUpperCase();
+    if(u==='D2050')return 'D2050';
+    if(u==='D2060')return 'D2060';
+    if(u==='EN LIGNE')return 'ENLIGNE';
+    if(u==='COMODAL')return 'COMODAL';
+    return 'DEF';
+  }
+  function borders(color){
+    return ['Top','Bottom','Left','Right'].map(p=>'<Border ss:Position="'+p+'" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="'+color+'"/>').join('');
+  }
+  function cellS(v,style,extra){ return '<Cell'+(style?' ss:StyleID="'+style+'"':'')+(extra||'')+'><Data ss:Type="String">'+xmlEsc(v)+'</Data></Cell>'; }
+  function cellN(v,style){ return '<Cell'+(style?' ss:StyleID="'+style+'"':'')+'><Data ss:Type="Number">'+v+'</Data></Cell>'; }
+
+  let locStyles='';
+  Object.keys(LOC).forEach(k=>{
+    const c=LOC[k];
+    locStyles += '<Style ss:ID="l'+k+'"><Font ss:Bold="1" ss:Color="'+c.fg+'"/><Interior ss:Color="'+c.bg+'" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders>'+borders('#FFFFFF')+'</Borders></Style>';
+    locStyles += '<Style ss:ID="g'+k+'"><Font ss:Bold="1" ss:Size="9" ss:Color="'+c.fg+'"/><Interior ss:Color="'+c.bg+'" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders>'+borders('#FFFFFF')+'</Borders></Style>';
+  });
+  const styles =
+    '<Styles>'+
+    '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>'+
+    '<Style ss:ID="title"><Font ss:Bold="1" ss:Size="14" ss:Color="#FFFFFF"/><Interior ss:Color="#2D5F4C" ss:Pattern="Solid"/><Alignment ss:Vertical="Center"/></Style>'+
+    '<Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#366E58" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>'+
+    '<Style ss:ID="cell"><Alignment ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/></Borders></Style>'+
+    '<Style ss:ID="cellC"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/></Borders></Style>'+
+    '<Style ss:ID="gtitle"><Font ss:Bold="1" ss:Size="12" ss:Color="#FFFFFF"/><Interior ss:Color="#2D5F4C" ss:Pattern="Solid"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/></Style>'+
+    '<Style ss:ID="ghdr"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#366E58" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders>'+borders('#FFFFFF')+'</Borders></Style>'+
+    '<Style ss:ID="gtime"><Font ss:Bold="1" ss:Size="9" ss:Color="#366E58"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Borders>'+borders('#E5E5E5')+'</Borders></Style>'+
+    '<Style ss:ID="gempty"><Borders>'+borders('#E5E5E5')+'</Borders></Style>'+
+    locStyles+
+    '</Styles>';
+
+  const headers = ['Session','Étape','# cours','Section','Nom du cours','Jour','Horaire','Mode','Local','Professeur','Courriel','Verrouillé'];
+  const listCols = '<Column ss:Width="78"/><Column ss:Width="40"/><Column ss:Width="82"/><Column ss:Width="54"/><Column ss:Width="160"/><Column ss:Width="68"/><Column ss:Width="82"/><Column ss:Width="84"/><Column ss:Width="72"/><Column ss:Width="130"/><Column ss:Width="170"/><Column ss:Width="64"/>';
+  let listRows = '<Row ss:Height="24"><Cell ss:StyleID="title" ss:MergeAcross="11"><Data ss:Type="String">'+xmlEsc('Horaire — '+S.label)+'</Data></Cell></Row>';
+  listRows += '<Row ss:Height="30">'+headers.map(h=>cellS(h,'hdr')).join('')+'</Row>';
+  COURS.filter(c=>c.session===sessionActive)
+    .sort((a,b)=> a.etape-b.etape || (ORDRE_JOUR[a.jour]||99)-(ORDRE_JOUR[b.jour]||99) || (a.debut==null?99:a.debut)-(b.debut==null?99:b.debut) || String(a.numeroCours).localeCompare(String(b.numeroCours),'fr'))
+    .forEach(c=>{
+      const p = getProf(c.profId);
+      listRows += '<Row>'+
+        cellS(S.label,'cell')+
+        cellN(c.etape,'cellC')+
+        cellS(c.numeroCours||'','cell')+
+        cellS(c.section||'','cell')+
+        cellS(c.nomCours||'','cell')+
+        cellS(c.jour||'','cell')+
+        cellS(c.plageHoraire||'','cell')+
+        cellS(c.modePrestation||'','cell')+
+        cellS(c.local||'','l'+locKey(c.local))+
+        cellS(profLabel(c.profId),'cell')+
+        cellS(p?p.courriel:'','cell')+
+        cellS(c.verrou?'Oui':'Non','cellC')+
+      '</Row>';
+    });
+
+  const gridCols = '<Column ss:Width="46"/>'+JOURS.map(()=>'<Column ss:Width="138"/>').join('');
+  let gridRows='';
+  ETAPES.forEach((e,idx)=>{
+    const ecs = COURS.filter(c=>c.session===sessionActive && c.etape===e && c.jour && c.debut!=null && !estStage(c));
+    const occ={};
+    ecs.forEach(c=>{
+      const col=ORDRE_JOUR[c.jour]; if(!col)return;
+      const startRow=c.debut-H_DEBUT;
+      const span=Math.max(1,(c.fin||(c.debut+DUREE_COURS))-c.debut);
+      occ[col+'_'+startRow]={c,span};
+      for(let k=1;k<span;k++) occ[col+'_'+(startRow+k)]='skip';
+    });
+    if(idx>0) gridRows += '<Row ss:Height="10"></Row>';
+    gridRows += '<Row ss:Height="24"><Cell ss:StyleID="gtitle" ss:MergeAcross="5"><Data ss:Type="String">'+xmlEsc('Étape '+e+' — '+S.label)+'</Data></Cell></Row>';
+    gridRows += '<Row ss:Height="22">'+cellS('Heure','ghdr')+JOURS.map(j=>cellS(j,'ghdr')).join('')+'</Row>';
+    const nRows=H_FIN-H_DEBUT;
+    for(let r=0;r<nRows;r++){
+      let row='<Row ss:Height="30">'+cellS((H_DEBUT+r)+'h','gtime');
+      for(let d=1; d<=5; d++){
+        const v=occ[d+'_'+r], xlCol=d+1;
+        if(v==='skip') continue;
+        if(v){
+          const c=v.c;
+          const merge = v.span>1 ? ' ss:MergeDown="'+(v.span-1)+'"' : '';
+          const txt = (c.numeroCours?c.numeroCours+NL:'')+xmlEsc(c.nomCours||'')+NL+xmlEsc(profLabel(c.profId))+' · '+xmlEsc(c.local||'');
+          row += '<Cell ss:Index="'+xlCol+'" ss:StyleID="g'+locKey(c.local)+'"'+merge+'><Data ss:Type="String">'+txt+'</Data></Cell>';
+        } else {
+          row += '<Cell ss:Index="'+xlCol+'" ss:StyleID="gempty"><Data ss:Type="String"></Data></Cell>';
+        }
+      }
+      gridRows += row+'</Row>';
+    }
+  });
+
+  const wb =
+    '<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n'+
+    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+
+    styles+
+    '<Worksheet ss:Name="Liste des cours"><Table>'+listCols+listRows+'</Table></Worksheet>'+
+    '<Worksheet ss:Name="Grille par étape"><Table>'+gridCols+gridRows+'</Table></Worksheet>'+
+    '</Workbook>';
+
+  const blob = new Blob([wb], {type:'application/vnd.ms-excel'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'horaire-'+sessionActive+'.xls';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+/* --- Interface : bouton « Générer », options, propositions, cadenas, rapport --- */
+function openGenererModal(){
+  const nbVerr = COURS.filter(c=>c.session===sessionActive && c.verrou).length;
+  const joursCB = JOURS.map(j=>
+    '<label class="qualif-item"><input type="checkbox" class="gen-jour" value="'+j+'" checked>'+ 
+    '<span class="q-label">'+j+'</span></label>').join('');
+  const diag = analyserFaisabilite(JOURS.slice());
+  const body =
+    '<p class="hint" style="margin-bottom:14px;line-height:1.5;">Le moteur V2 génère plusieurs propositions, les classe par score global, distingue les contraintes dures des préférences et n\'applique rien avant votre confirmation.</p>'+ 
+    diagnosticHTML(diag)+
+    (nbVerr ? '<div class="conflits-ok" style="margin-bottom:14px;">🔒 '+nbVerr+' cours verrouillé'+(nbVerr>1?'s':'')+' conservé'+(nbVerr>1?'s':'')+'.</div>' : '')+
+    '<div class="field full"><label>Jours permis</label>'+ 
+      '<div class="qualif-list" style="max-height:none;flex-direction:row;flex-wrap:wrap;gap:6px;">'+joursCB+'</div></div>'+ 
+    '<div class="form-grid" style="margin-top:14px;">'+
+      '<div class="field"><label>Nombre de propositions</label><select id="gen-nb"><option>3</option><option selected>5</option></select></div>'+ 
+      '<div class="field"><label>Préférences</label><label class="qualif-item" style="padding:7px 0;"><input type="checkbox" id="gen-vendredi"><span class="q-label">Éviter le vendredi</span></label></div>'+ 
+      '<div class="field full"><label>Règle spéciale <span class="hint">(interprétation simple : vendredi, soir)</span></label>'+ 
+      '<input id="gen-regle" placeholder="ex. éviter le vendredi, limiter les soirs…"></div>'+ 
+    '</div>';
+  const foot =
+    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>'+ 
+    '<button class="btn btn-primary" onclick="lancerGeneration()">⚡ Générer les propositions</button>';
+  openModal('Générer l\'horaire — '+SESSIONS[sessionActive].label, body, foot);
+}
+function lancerGeneration(){
+  const jours = Array.from(document.querySelectorAll('#modalBody .gen-jour')).filter(cb=>cb.checked).map(cb=>cb.value);
+  if(!jours.length){ alert('Choisissez au moins un jour.'); return; }
+  const regle = (document.getElementById('gen-regle').value||'').trim();
+  const nb = parseInt(document.getElementById('gen-nb').value,10) || 5;
+  const eviterVendredi = document.getElementById('gen-vendredi').checked;
+  const res = genererPropositions({ jours, regleSpeciale:regle, nbPropositions:nb, eviterVendredi });
+  _dernieresPropositions = res.propositions;
+  afficherPropositions(res);
+}
+function resumeProposition(prop, i){
+  const places = prop.etat.placements.filter(p=>!p.verrou).length;
+  const soirs = prop.etat.placements.filter(p=>p.debut>=16).length;
+  const huit = prop.etat.placements.filter(p=>p.debut===8).length;
+  const vend = prop.etat.placements.filter(p=>p.jour==='Vendredi').length;
+  const nonPlaces = prop.etat.unplaced.length;
+  const warn = prop.avertissements.length + prop.soft.length;
+  return '<tr>'+ 
+    '<td><b>Proposition '+(i+1)+'</b></td>'+ 
+    '<td>'+prop.score+'</td>'+ 
+    '<td>'+places+'</td>'+ 
+    '<td>'+nonPlaces+'</td>'+ 
+    '<td>'+soirs+'</td>'+ 
+    '<td>'+huit+'</td>'+ 
+    '<td>'+vend+'</td>'+ 
+    '<td>'+warn+'</td>'+ 
+    '<td class="td-actions"><button class="btn btn-sm btn-primary" onclick="appliquerProposition('+i+')">Appliquer</button></td>'+ 
+  '</tr>';
+}
+function afficherPropositions(res){
+  let body = diagnosticHTML(res.diagnostic);
+  if(!res.propositions.length){
+    body += '<div class="conflits-banner"><h4>⚠ Aucune proposition générée</h4><p>Ajustez les jours permis, les disponibilités ou les cours verrouillés.</p></div>';
+  } else {
+    body += '<p class="hint" style="margin:0 0 12px;">Aucune proposition n\'est appliquée tant que vous ne cliquez pas sur « Appliquer ».</p>'+ 
+      '<div style="overflow-x:auto"><table class="data-table"><thead><tr>'+ 
+      '<th>Scénario</th><th>Score</th><th>Placés</th><th>Non placés</th><th>Soirs</th><th>8 h</th><th>Vendredis</th><th>Alertes</th><th class="th-actions">Action</th>'+ 
+      '</tr></thead><tbody>'+res.propositions.map(resumeProposition).join('')+'</tbody></table></div>';
+    const best = res.propositions[0];
+    const details = best.avertissements.concat(best.soft).slice(0,10);
+    if(details.length){
+      body += '<div class="conflits-banner" style="margin-top:16px;"><h4>Analyse de la meilleure proposition</h4><ul>'+details.map(x=>'<li>'+esc(x)+'</li>').join('')+(best.avertissements.concat(best.soft).length>10?'<li>… autres points mineurs masqués.</li>':'')+'</ul></div>';
+    } else {
+      body += '<div class="conflits-ok" style="margin-top:16px;">✓ La meilleure proposition ne contient aucun avertissement majeur.</div>';
+    }
+  }
+  if(res.regle) body += '<p class="hint" style="margin-top:12px;">Règle spéciale saisie : « '+esc(res.regle)+' ».</p>';
+  openModal('Propositions générées', body, '<button class="btn btn-ghost" onclick="closeModal()">Fermer sans appliquer</button>');
+}
+// Cadenas : verrouille / déverrouille un cours (conservé lors de la prochaine génération).
+function toggleVerrou(courseId){
+  const c = COURS.find(x=>x.id===courseId);
+  if(!c) return;
+  c.verrou = !c.verrou;
+  refreshAll();
+}
+
+/* ============================================================
+   ÉTAPE 5 — PERSISTANCE
+   - Sauvegarde automatique dans le navigateur (localStorage) à chaque modif.
+   - Export d'un fichier .json (copie de sauvegarde, transmissible).
+   - Import d'un fichier .json. Réinitialisation aux données A2026.
+   ============================================================ */
+
+// Clé propre au cursus révisé 2026-2027 : garantit le chargement du nouveau cursus
+// (l'ancienne sauvegarde « ...-A2026 » n'est plus lue, mais reste intacte au cas où).
+const STORAGE_KEY = 'planificateur-horaire-2026-2027';
+
+// Recale les compteurs d'id sur les données présentes (évite les collisions d'id)
+function rafraichirSeq(){
+  _coursSeq = COURS.reduce((m,c)=>Math.max(m, c.id||0), 0);
+  _profSeq  = PROFS.reduce((m,p)=>Math.max(m, p.id||0), 0);
+}
+
+function majStatutSauvegarde(ok){
+  const el = document.getElementById('saveStatus');
+  if(!el) return;
+  if(ok===false){ el.textContent = 'Sauvegarde auto indisponible — utilisez Exporter'; return; }
+  const d = new Date(), p = n=>String(n).padStart(2,'0');
+  el.textContent = 'Enregistré ✓ ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+async function sauvegarder(){
+  if(userRole !== 'admin'){ majStatutSauvegarde(true); return; }
+  try{
+    const { error } = await sb.from('horaire_data')
+      .upsert({ id:1, cours:COURS, profs:PROFS, updated_at: new Date().toISOString() }, { onConflict:'id' });
+    if(error) throw error;
+    // Cache local en cas de perte de connexion
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({ version:'1.0', profs:PROFS, cours:COURS })); }catch(e){}
+    majStatutSauvegarde(true);
+  }catch(e){
+    console.error('Erreur Supabase (sauvegarder):', e);
+    majStatutSauvegarde(false);
+  }
+}
+
+// Remplace le contenu (en place, car COURS/PROFS sont const) à partir d'un objet de données
+function appliquerDonnees(d){
+  if(!d || !Array.isArray(d.cours) || !Array.isArray(d.profs)) return false;
+  PROFS.length = 0; d.profs.forEach(p=>PROFS.push(p));
+  COURS.length = 0; d.cours.forEach(c=>COURS.push({ session:'A2026', verrou:false, ...c })); // session/verrou par défaut si absents
+  rafraichirSeq();
+  return true;
+}
+
+async function chargerSauvegarde(){
+  try{
+    const { data, error } = await sb.from('horaire_data')
+      .select('cours, profs').eq('id', 1).single();
+    if(error || !data) throw new Error('no data');
+    const c = Array.isArray(data.cours) ? data.cours : [];
+    const p = Array.isArray(data.profs) ? data.profs : [];
+    if(!c.length && !p.length) return false; // DB vide → charger les données par défaut
+    return appliquerDonnees({ cours:c, profs:p });
+  }catch(e){
+    // Repli sur localStorage si la DB est inaccessible
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return false;
+      return appliquerDonnees(JSON.parse(raw));
+    }catch(e2){ return false; }
+  }
+}
+
+function exporterJSON(){
+  const data = { version:'1.0', exporte:new Date().toISOString(), profs:PROFS, cours:COURS };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const d = new Date(), p = n=>String(n).padStart(2,'0');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'horaire-2026-2027-' + d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importerJSON(file){
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const d = JSON.parse(reader.result);
+      if(!appliquerDonnees(d)) throw new Error('format');
+      refreshAll();
+      alert('Importation réussie : ' + COURS.length + ' cours, ' + PROFS.length + ' profs.');
+    }catch(e){
+      alert('Fichier invalide. Importez un fichier .json exporté par cet outil.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function reinitialiser(){
+  if(userRole !== 'admin') return;
+  if(!confirm('Réinitialiser au cursus 2026-2027 d\'origine ?\nToutes vos modifications seront perdues.')) return;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  chargerDonneesParDefaut();
+  buildListe();
+  renderLegend();
+  await sauvegarder();
+  refreshAll();
+}
+
+/* ============================================================
+   VERSIONS — historique daté + restauration
+   ============================================================ */
+const VERSIONS_KEY = 'planificateur-versions-2026-2027';
+const MAX_VERSIONS = 30; // on garde les 30 plus récentes
+
+async function lireVersions(){
+  try{
+    const { data } = await sb.from('versions')
+      .select('*').order('date', { ascending:false }).limit(30);
+    return data || [];
+  }catch(e){ return []; }
+}
+// Maintenu pour compatibilité (non utilisé — écriture individuelle dans Supabase)
+async function ecrireVersions(arr){ return true; }
+// Étiquette automatique « 30 mai 2026, 14 h 05 »
+function libelleDate(iso){
+  const d = new Date(iso);
+  try{ return d.toLocaleString('fr-CA', { dateStyle:'long', timeStyle:'short' }); }
+  catch(e){ return d.toLocaleString(); }
+}
+
+async function sauvegarderVersion(){
+  if(userRole !== 'admin') return;
+  const nom = prompt('Nom de cette version ? (facultatif — laissez vide pour la date seulement)', '');
+  if(nom===null) return;
+  const v = {
+    id:       Date.now(),
+    date:     new Date().toISOString(),
+    label:    (nom||'').trim(),
+    nb_cours: COURS.length,
+    nb_profs: PROFS.length,
+    cours:    JSON.parse(JSON.stringify(COURS)),
+    profs:    JSON.parse(JSON.stringify(PROFS))
+  };
+  try{
+    const { error } = await sb.from('versions').insert(v);
+    if(error) throw error;
+    alert('Version enregistrée — ' + libelleDate(v.date) + (v.label ? ' (« '+v.label+' »)' : '') + '.');
+  }catch(e){
+    alert('Erreur lors de la sauvegarde de la version : ' + (e.message || e));
+  }
+}
+
+async function openVersionsModal(){
+  const arr = await lireVersions();
+  let body;
+  if(!arr.length){
+    body = '<p class="qualif-empty">Aucune version enregistrée pour l\'instant.<br>Cliquez « 💾 Sauvegarder une version » pour conserver l\'horaire actuel.</p>';
+  } else {
+    body = '<p class="hint" style="margin-bottom:12px;">Choisissez une version pour y revenir. La restauration remplace l\'horaire actuel — pensez à sauvegarder une version avant.</p>'+
+      '<div class="versions-list">'+ arr.map(v=>
+        '<div class="version-item">'+
+          '<div class="version-info">'+
+            '<span class="version-date">'+esc(libelleDate(v.date))+'</span>'+
+            (v.label ? '<span class="version-label">'+esc(v.label)+'</span>' : '')+
+            '<span class="version-meta">'+(v.nb_cours||v.nbCours||0)+' cours · '+(v.nb_profs||v.nbProfs||0)+' profs</span>'+
+          '</div>'+
+          '<div class="version-actions">'+
+            (userRole==='admin' ? '<button class="btn btn-sm btn-primary" onclick="restaurerVersion('+v.id+')">Restaurer</button>' : '')+
+            (userRole==='admin' ? '<button class="btn btn-sm btn-ghost" onclick="supprimerVersion('+v.id+')" title="Supprimer cette version">🗑</button>' : '')+
+          '</div>'+
+        '</div>'
+      ).join('')+'</div>';
+  }
+  const foot = '<button class="btn btn-ghost" onclick="closeModal()">Fermer</button>';
+  openModal('Historique des versions', body, foot);
+}
+
+async function restaurerVersion(id){
+  const arr = await lireVersions();
+  const v = arr.find(x=> String(x.id)===String(id));
+  if(!v) return;
+  if(!confirm('Revenir à la version du ' + libelleDate(v.date) + (v.label ? ' (« '+v.label+' »)' : '') +
+              ' ?\nL\'horaire actuel sera remplacé.')) return;
+  appliquerDonnees({ profs: JSON.parse(JSON.stringify(v.profs)), cours: JSON.parse(JSON.stringify(v.cours)) });
+  buildListe();
+  renderLegend();
+  await sauvegarder();
+  refreshAll();
+  closeModal();
+  alert('Version restaurée — ' + libelleDate(v.date) + '.');
+}
+
+async function supprimerVersion(id){
+  const arr = await lireVersions();
+  const v = arr.find(x=> String(x.id)===String(id));
+  if(!v) return;
+  if(!confirm('Supprimer la version du ' + libelleDate(v.date) + ' ?')) return;
+  await sb.from('versions').delete().eq('id', id);
+  openVersionsModal().catch(console.error);
+}
+
+/* ============================================================
+   ÉTAPE 2 — INTERFACE : onglets, thème, fond animé
+   ============================================================ */
+
+// Onglets
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.onclick = ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('view-'+tab.dataset.view).classList.add('active');
+  };
+});
+
+// Bascule mode sombre
+const themeToggle = document.getElementById('themeToggle');
+function applyTheme(dark){
+  document.documentElement.setAttribute('data-theme', dark?'dark':'light');
+  document.getElementById('toggleTrack').classList.toggle('active', dark);
+  document.getElementById('themeIcon').textContent = dark?'☀️':'🌙';
+  document.getElementById('themeLabel').textContent = dark?'Mode clair':'Mode sombre';
+}
+let dark=false;
+themeToggle.onclick = ()=>{ dark=!dark; applyTheme(dark); };
+
+// Modale : fermeture (bouton ✕, clic sur le fond, touche Échap)
+document.getElementById('modalClose').onclick = closeModal;
+document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target.id==='modalOverlay') closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+// Changement de session (Automne / Hiver)
+document.getElementById('sessionSelect').onchange = e=> switchSession(e.target.value);
+
+// Ajouter un prof
+document.getElementById('addProfBtn').onclick = ()=> openProfModal(null);
+
+// Génération automatique de l'horaire
+document.getElementById('btnGenerer').onclick = openGenererModal;
+
+// Versions : sauvegarder une version datée / ouvrir l'historique
+document.getElementById('btnSaveVersion').onclick = ()=> sauvegarderVersion().catch(console.error);
+document.getElementById('btnVersions').onclick = ()=> openVersionsModal().catch(console.error);
+
+// Exports branchés
+let _printRestoreState = null;
+const PRINT_REPORT_CLASSES = ['print-letter','print-report-session','print-report-etapes','print-report-distribution','print-report-profs','print-report-contractuels','print-report-locaux'];
+
+function setDynamicPrintPage(cssText){
+  let style = document.getElementById('dynamicPrintPageStyle');
+  if(!style){
+    style = document.createElement('style');
+    style.id = 'dynamicPrintPageStyle';
+    document.head.appendChild(style);
+  }
+  style.textContent = cssText || '';
+}
+
+function clearDynamicPrintPage(){
+  const style = document.getElementById('dynamicPrintPageStyle');
+  if(style) style.remove();
+}
+
+function setActiveView(view){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  const tab = document.querySelector('.tab[data-view="'+view+'"]');
+  if(tab) tab.classList.add('active');
+  const panel = document.getElementById('view-'+view);
+  if(panel) panel.classList.add('active');
+}
+
+function activeViewName(){
+  const t = document.querySelector('.tab.active');
+  return t ? t.dataset.view : 'grille';
+}
+
+function nettoyerRapportsPDF(){
+  PRINT_REPORT_CLASSES.forEach(cls=>document.body.classList.remove(cls));
+  clearDynamicPrintPage();
+  const cont = document.getElementById('printReportsContainer');
+  if(cont){ cont.innerHTML=''; cont.setAttribute('aria-hidden','true'); }
+}
+
+function formatDispos(dispos){
+  if(!Array.isArray(dispos) || dispos.length===0) return '<span class="muted">Non renseignée</span>';
+  const ordrePer = { AM:1, PM:2, SOIR:3 };
+  return '<div class="dispo-mini">'+dispos.slice().sort((a,b)=>{
+    const [ja,pa] = a.split('|'), [jb,pb] = b.split('|');
+    return (ORDRE_JOUR[ja]||99)-(ORDRE_JOUR[jb]||99) || (ordrePer[pa]||99)-(ordrePer[pb]||99);
+  }).map(v=>{
+    const [jour,code] = v.split('|');
+    const per = PERIODES.find(p=>p[0]===code);
+    return '<span class="dispo-token">'+esc(JOURS_ABBR[jour]||jour)+' '+esc(per ? per[1] : code)+'</span>';
+  }).join('')+'</div>';
+}
+
+function coursSessionDuProf(profId){
+  return COURS.filter(c=>c.session===sessionActive && c.profId===profId)
+    .sort((a,b)=> (a.etape-b.etape) || compareVal(a,b,'jour') || (a.debut||99)-(b.debut||99));
+}
+
+function buildContractDispoMatrix(dispos){
+  const set = new Set(Array.isArray(dispos) ? dispos : []);
+  const labels = { AM:'AM', PM:'PM', SOIR:'SOIR' };
+  const fillSvg = '<svg class="contract-dispo-fill" viewBox="0 0 100 36" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect x="0" y="0" width="100" height="36" rx="3" ry="3" fill="#000"></rect></svg>';
+  let html = '<div class="contract-dispo-matrix">';
+  html += '<div class="contract-dispo-corner"></div>';
+  html += JOURS.map(j=>'<div class="contract-dispo-head">'+esc(JOURS_ABBR[j]||j)+'</div>').join('');
+  PERIODES.forEach(([code,label])=>{
+    html += '<div class="contract-dispo-rowlabel">'+esc(labels[code] || label)+'</div>';
+    JOURS.forEach(j=>{
+      const ok = set.has(j+'|'+code);
+      html += '<div class="contract-dispo-cell '+(ok?'available':'unavailable')+'">'+(ok?fillSvg:'&nbsp;')+'</div>';
+    });
+  });
+  html += '</div>';
+  return html;
+}
+
+function buildEtapesPrintReport(){
+  const cont = document.getElementById('printReportsContainer');
+  cont.innerHTML = '';
+  ETAPES.forEach(e=>{
+    const page = document.createElement('div');
+    page.className = 'print-page';
+    const title = document.createElement('div');
+    title.className = 'print-report-title';
+    title.textContent = SESSIONS[sessionActive].label + ' - Étape ' + e;
+    page.appendChild(title);
+    page.appendChild(buildGrid(e, false));
+    cont.appendChild(page);
+  });
+  cont.setAttribute('aria-hidden','false');
+}
+
+function buildLocauxPrintReport(){
+  const cont = document.getElementById('printReportsContainer');
+  cont.innerHTML = '';
+  ['D2050','D2060'].forEach(local=>{
+    const page = document.createElement('div');
+    page.className = 'print-page';
+    const title = document.createElement('div');
+    title.className = 'print-report-title';
+    const stats = calculerOccupationLocal(local);
+    title.textContent = SESSIONS[sessionActive].label + ' - Local ' + local + ' (' + stats.cours + ' cours, ' + stats.heures + ' h occupées)';
+    page.appendChild(title);
+    page.appendChild(buildRoomsAvailabilityView(local));
+    cont.appendChild(page);
+  });
+  cont.setAttribute('aria-hidden','false');
+}
+
+function buildContractuelsPrintReport(){
+  const cont = document.getElementById('printReportsContainer');
+  const profs = PROFS.filter(p=>statutProf(p)==='contractuel')
+    .sort((a,b)=> ((a.nom||'')+(a.prenom||'')).localeCompare((b.nom||'')+(b.prenom||''),'fr'));
+  const sheets = profs.map(p=>{
+    const cours = coursSessionDuProf(p.id);
+    const coursTxt = cours.length
+      ? '<ul class="contract-course-list">'+cours.map(c=>
+          '<li class="contract-course-item">É'+c.etape+' · '+esc(c.numeroCours)+' - '+esc(c.nomCours)+' '+
+          '<span class="contract-course-meta">(' + esc(c.jour||'non placé') + (c.plageHoraire ? ', '+esc(c.plageHoraire) : '') + ')</span></li>'
+        ).join('')+'</ul>'
+      : '<div class="contract-empty">Aucun cours assigné dans cette session.</div>';
+    const qualifs = Array.isArray(p.qualifications) && p.qualifications.length
+      ? '<div class="contract-qualifs">'+p.qualifications.slice().sort((a,b)=>String(a).localeCompare(String(b),'fr')).map(q=>'<span class="contract-qualif-chip">'+esc(q)+'</span>').join('')+'</div>'
+      : '<div class="contract-empty">Non renseignées.</div>';
+    return '<section class="contract-sheet">'+
+      '<div class="contract-sheet-head">'+
+        '<div class="contract-sheet-name">'+esc(nomCompletProf(p))+'</div>'+
+        '<div class="contract-sheet-email">'+esc(p.courriel||'')+'</div>'+
+      '</div>'+
+      '<div class="contract-section">'+
+        '<div class="contract-section-title">Cours assignés</div>'+
+        coursTxt+
+      '</div>'+
+      '<div class="contract-section">'+
+        '<div class="contract-section-title">Disponibilités</div>'+
+        buildContractDispoMatrix(p.dispos)+
+      '</div>'+
+      '<div class="contract-section">'+
+        '<div class="contract-section-title">Qualifications</div>'+
+        qualifs+
+      '</div>'+
+    '</section>';
+  }).join('');
+  cont.innerHTML =
+    '<div class="print-report-title">'+SESSIONS[sessionActive].label+' - Professeurs contractuels et disponibilités</div>'+
+    (sheets ? '<div class="contract-report">'+sheets+'</div>' : '<div class="contract-empty">Aucun professeur contractuel dans le registre.</div>');
+  cont.setAttribute('aria-hidden','false');
+}
+
+function openPDFOptionsModal(){
+  const body =
+    '<p class="hint" style="margin-bottom:14px;line-height:1.5;">Choisissez le rapport PDF à générer pour la session affichée : <b>'+SESSIONS[sessionActive].label+'</b>.</p>'+
+    '<div class="pdf-options">'+
+      '<button class="btn pdf-option" onclick="lancerImpressionPDF(\'session\')"><strong>1. Ensemble de l\'horaire pour la session</strong><span>Vue complète compacte avec les trois étapes côte à côte.</span></button>'+
+      '<button class="btn pdf-option" onclick="lancerImpressionPDF(\'etapes\')"><strong>2. Une étape par page</strong><span>Une grille horaire pleine page pour chaque étape de la session.</span></button>'+
+      '<button class="btn pdf-option" onclick="lancerImpressionPDF(\'distribution\')"><strong>3. Liste de la distribution des cours</strong><span>Tableaux de cours, profs, locaux et modes de prestation.</span></button>'+
+      '<button class="btn pdf-option" onclick="lancerImpressionPDF(\'profs\')"><strong>4. Liste du corps professoral</strong><span>Coordonnées et nombre de cours par professeur.</span></button>'+
+      '<button class="btn pdf-option" onclick="lancerImpressionPDF(\'contractuels\')"><strong>5. Professeurs contractuels et disponibilités</strong><span>Cours assignés, disponibilités et qualifications.</span></button>'+
+      '<button class="btn pdf-option" onclick="lancerImpressionPDF(\'locaux\')"><strong>6. Locaux D2050 et D2060</strong><span>Disponibilités et plages occupées, un local par page en format portrait.</span></button>'+
+    '</div>';
+  openModal('Choisir un rapport PDF', body, '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>');
+}
+
+function lancerImpressionPDF(type){
+  closeModal();
+  nettoyerRapportsPDF();
+  _printRestoreState = { etape: etapeActive, view: activeViewName() };
+  document.body.classList.add('print-letter','print-report-'+type);
+  setDynamicPrintPage((type==='contractuels' || type==='etapes' || type==='locaux') ? '@page { size: Letter portrait; margin: 0.25in; }' : '@page { size: Letter landscape; margin: 0.25in; }');
+
+  if(type==='session'){
+    setActiveView('grille');
+    etapeActive = 'all';
+    renderChips();
+    renderSchedule();
+  } else if(type==='etapes'){
+    setActiveView('grille');
+    buildEtapesPrintReport();
+  } else if(type==='distribution'){
+    buildListe();
+    setActiveView('liste');
+  } else if(type==='profs'){
+    renderProfs();
+    setActiveView('profs');
+  } else if(type==='contractuels'){
+    buildContractuelsPrintReport();
+    setActiveView('grille');
+  } else if(type==='locaux'){
+    buildLocauxPrintReport();
+    setActiveView('grille');
+  }
+
+  setTimeout(()=>window.print(), 50);
+}
+
+window.addEventListener('afterprint', ()=>{
+  nettoyerRapportsPDF();
+  if(_printRestoreState){
+    etapeActive = _printRestoreState.etape;
+    setActiveView(_printRestoreState.view || 'grille');
+    _printRestoreState = null;
+    renderChips();
+    renderSchedule();
+  }
+});
+document.getElementById('btnPDF').onclick = openPDFOptionsModal;
+document.getElementById('btnExcel').onclick = exporterExcel;
+
+// Gestion des données : export / import / réinitialisation
+document.getElementById('btnExport').onclick = exporterJSON;
+document.getElementById('btnImport').onclick = ()=> document.getElementById('fileImport').click();
+document.getElementById('fileImport').onchange = e=>{ if(e.target.files[0]) importerJSON(e.target.files[0]); e.target.value=''; };
+document.getElementById('btnReset').onclick = reinitialiser;
+
+// Fond animé : grille de points réactive à la souris
+(function(){
+  const cv = document.getElementById('gridCanvas');
+  const ctx = cv.getContext('2d');
+  let w,h, dots=[], mouse={x:-999,y:-999};
+  const GAP=34;
+  function resize(){
+    w=cv.width=window.innerWidth; h=cv.height=window.innerHeight;
+    dots=[];
+    for(let x=GAP; x<w; x+=GAP) for(let y=GAP; y<h; y+=GAP) dots.push({x,y});
+  }
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+    dots.forEach(d=>{
+      const dx=d.x-mouse.x, dy=d.y-mouse.y, dist=Math.sqrt(dx*dx+dy*dy);
+      const near = Math.max(0, 1 - dist/140);
+      const r = 1 + near*2.4;
+      const base = isDark ? 70 : 200;
+      const c = isDark ? Math.round(base+near*120) : Math.round(base-near*120);
+      ctx.beginPath(); ctx.arc(d.x,d.y,r,0,Math.PI*2);
+      ctx.fillStyle = 'rgba('+c+','+c+','+c+','+(0.35+near*0.5)+')';
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('mousemove', e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+  window.addEventListener('mouseout', ()=>{ mouse.x=-999; mouse.y=-999; });
+  window.addEventListener('resize', resize);
+  resize(); draw();
+})();
+
+/* ---- Démarrage ---- */
+async function _initApp(){
+  if(!await chargerSauvegarde()){ chargerDonneesParDefaut(); }
+  majStatutSauvegarde(true);
+  const _c0 = detecterConflits(); _idsEnConflit = _c0.ids; _listeConflits = _c0.liste;
+  renderConflits(); renderChips(); renderSchedule();
+  renderLegend(); buildListe(); renderProfs();
+  if(window.lucide) lucide.createIcons();
+}
+
+async function demarrer(sessionObj){
+  const sess = sessionObj || (await sb.auth.getSession()).data.session;
+  if(!sess){
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    return;
+  }
+  currentUser = sess.user;
+  userRole    = await getUserRole(currentUser.id);
+  applyRoleUI();
+  document.getElementById('loginOverlay').classList.add('hidden');
+  await _initApp();
+}
+
+/* --- Connexion --- */
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('loginEmail').value.trim();
+  const pwd   = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.classList.remove('show');
+  if(!email || !pwd){
+    errEl.textContent = 'Courriel et mot de passe requis.';
+    errEl.style.color = 'var(--loc-comodal)'; errEl.classList.add('show'); return;
+  }
+  errEl.textContent = 'Connexion en cours…';
+  errEl.style.color = 'var(--text-secondary)'; errEl.classList.add('show');
+  const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  if(error){
+    errEl.textContent = 'Identifiants invalides. Vérifiez votre courriel et mot de passe.';
+    errEl.style.color = 'var(--loc-comodal)'; return;
+  }
+  errEl.classList.remove('show');
+  const { data:{ session } } = await sb.auth.getSession();
+  demarrer(session).catch(console.error);
+});
+document.getElementById('loginPassword').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('loginBtn').click();
+});
+
+/* --- Déconnexion --- */
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+  currentUser = null; userRole = 'viewer';
+  document.body.classList.remove('viewer-mode');
+  document.getElementById('loginOverlay').classList.remove('hidden');
+});
+
+/* --- Rafraîchissement token --- */
+sb.auth.onAuthStateChange((event)=>{
+  if(event === 'SIGNED_OUT'){
+    document.getElementById('loginOverlay').classList.remove('hidden');
+  }
+});
+
+demarrer().catch(console.error);
+</script>
+</body>
+</html>
