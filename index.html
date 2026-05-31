@@ -3033,20 +3033,58 @@ let _dispoSaveTimer = null;
 
 async function chargerProfProfil(){
   try {
-    const { data, error } = await sb.from('prof_profiles').select('*').eq('user_id', currentUser.id).single();
-    if(error) throw error;
-    profProfil = data;
-    // Auto-lier le user_id dans profs_roster si pas encore fait
-    if(profProfil?.email_cours){
-      const { data: rEntry } = await sb.from('profs_roster')
-        .select('id, user_id')
-        .ilike('email', profProfil.email_cours)
-        .maybeSingle();
-      if(rEntry && !rEntry.user_id){
-        await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
+    // 1. Chercher le profil existant
+    const { data, error } = await sb.from('prof_profiles')
+      .select('*').eq('user_id', currentUser.id).maybeSingle();
+
+    if(data){
+      // Profil trouvé — auto-lier au roster si pas encore fait
+      profProfil = data;
+      if(profProfil.email_cours){
+        const { data: rEntry } = await sb.from('profs_roster')
+          .select('id, user_id').ilike('email', profProfil.email_cours).maybeSingle();
+        if(rEntry && !rEntry.user_id){
+          await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
+        }
       }
+      return;
     }
-  } catch(e){ profProfil = null; }
+
+    // 2. Pas de profil — chercher dans profs_roster par email de connexion
+    const loginEmail = currentUser.email || '';
+    const { data: rEntry } = await sb.from('profs_roster')
+      .select('*').ilike('email', loginEmail).maybeSingle();
+
+    const newProfile = {
+      user_id:         currentUser.id,
+      prenom:          rEntry?.prenom          || '',
+      nom:             rEntry?.nom             || '',
+      email_cours:     rEntry?.email           || loginEmail,
+      statut:          rEntry?.statut          || 'contractuel',
+      numero_employe:  rEntry?.numero_employe  || '',
+      telephone:       rEntry?.telephone       || ''
+    };
+
+    // 3. Créer le profil automatiquement (requiert RLS INSERT own)
+    const { data: created, error: createErr } = await sb.from('prof_profiles')
+      .insert(newProfile).select().single();
+
+    if(createErr){
+      console.warn('[chargerProfProfil] INSERT échoué :', createErr.message);
+      profProfil = null;
+      return;
+    }
+    profProfil = created;
+
+    // 4. Lier le user_id dans profs_roster si pas encore fait
+    if(rEntry && !rEntry.user_id){
+      await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
+    }
+
+  } catch(e){
+    console.warn('[chargerProfProfil]', e);
+    profProfil = null;
+  }
 }
 
 async function chargerDispoSettings(){
