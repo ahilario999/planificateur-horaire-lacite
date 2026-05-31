@@ -495,6 +495,100 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
 }
 .role-badge.admin{ border-color:var(--primary); color:var(--primary); }
 .role-badge.viewer{ border-color:var(--loc-enligne); color:#d5a021; }
+.role-badge.prof{ border-color:#7c6fcd; color:#5a4fbf; }
+
+/* ---- RÔLE PROF ---- */
+/* En mode prof : cacher admin-only, onglet corps-prof ; montrer espace-prof */
+body.prof-mode [data-admin-only]{ display:none !important; }
+body.prof-mode .tab[data-view="profs"]{ display:none !important; }
+body.prof-mode .tab[data-view="espace-prof"]{ display:flex !important; }
+.tab[data-view="espace-prof"]{ display:none; } /* caché par défaut */
+
+/* Badge de notification sur les onglets */
+.tab-notif{ display:inline-flex; align-items:center; justify-content:center;
+  background:var(--loc-comodal); color:#fff; font-size:10px; font-weight:700;
+  border-radius:50px; min-width:18px; height:18px; padding:0 5px;
+  margin-left:6px; line-height:1; }
+
+/* Espace prof */
+.espace-prof{ display:flex; flex-direction:column; gap:20px; }
+.ep-section{ background:var(--card-bg); border:1px solid var(--border); border-radius:16px;
+  padding:20px 24px; box-shadow:var(--shadow-sm); }
+.ep-section-title{ font-size:13px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--text-secondary); margin-bottom:16px;
+  display:flex; align-items:center; gap:8px; }
+.ep-profil-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.ep-profil-field{ display:flex; flex-direction:column; gap:3px; }
+.ep-profil-label{ font-size:11px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.05em; color:var(--text-light); }
+.ep-profil-value{ font-size:15px; font-weight:600; color:var(--text-primary); }
+
+/* Statut badges */
+.statut-badge{ display:inline-flex; align-items:center; padding:3px 10px;
+  border-radius:50px; font-size:11px; font-weight:700; white-space:nowrap; }
+.statut-badge.en_attente{ background:rgba(213,160,33,.15); color:#c07a10; border:1px solid rgba(213,160,33,.4); }
+.statut-badge.accepte{ background:rgba(76,175,80,.15); color:#2e7d32; border:1px solid rgba(76,175,80,.4); }
+.statut-badge.refuse{ background:rgba(227,101,91,.15); color:#c0392b; border:1px solid rgba(227,101,91,.4); }
+
+/* Bannière fenêtre de disponibilités */
+.dispo-fenetre-banner{ padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600;
+  display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.dispo-fenetre-banner.ouverte{ background:rgba(76,175,80,.12); border:1px solid rgba(76,175,80,.4); color:#2e7d32; }
+.dispo-fenetre-banner.fermee{ background:rgba(227,101,91,.08); border:1px solid rgba(227,101,91,.3); color:#c0392b; }
+
+/* Notes par jour dans la grille dispos */
+.dispo-day-notes{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:10px; }
+.dispo-note-field{ display:flex; flex-direction:column; gap:4px; }
+.dispo-note-field label{ font-size:10px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.04em; color:var(--text-secondary); }
+.dispo-note-field textarea{ resize:none; padding:7px 10px; border:1px solid var(--border);
+  border-radius:8px; background:var(--bg); font-family:inherit; font-size:12px;
+  color:var(--text-primary); width:100%; }
+.dispo-note-field textarea:focus{ outline:none; border-color:var(--primary); }
+.dispo-note-field textarea:disabled{ opacity:.5; cursor:not-allowed; }
+.dispo-autosave{ font-size:12px; color:var(--text-light); margin-top:8px;
+  display:flex; align-items:center; gap:6px; min-height:20px; }
+.dispo-cell.dispo-locked{ cursor:not-allowed; opacity:.6; }
+
+/* Demandes de cours — vue prof */
+.demandes-list{ display:flex; flex-direction:column; gap:8px; }
+.demande-item{ display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding:10px 14px; background:var(--bg);
+  border:1px solid var(--border); border-radius:11px; flex-wrap:wrap; }
+.demande-info{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.demande-nom{ font-size:14px; font-weight:600; }
+.demande-meta{ font-size:12px; color:var(--text-secondary); }
+.demande-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.demande-add-row{ display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;
+  margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+.demande-add-row .field{ flex:1 1 180px; margin:0; }
+
+/* Cours prof surligné dans la grille */
+.course-block.prof-own{ outline:3px solid #f5c842; outline-offset:-2px;
+  box-shadow:0 0 0 3px rgba(245,200,66,.45), 0 4px 12px rgba(0,0,0,.2); }
+
+/* Admin — section demandes et paramètres */
+.admin-section-title{ font-size:13px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--text-secondary); margin:24px 0 12px;
+  display:flex; align-items:center; gap:10px; }
+.admin-demande-item{ display:flex; align-items:center; gap:12px; padding:10px 14px;
+  background:var(--bg); border:1px solid var(--border); border-radius:11px;
+  margin-bottom:8px; flex-wrap:wrap; }
+.admin-demande-info{ flex:1; min-width:0; }
+.admin-demande-prof{ font-size:13px; font-weight:700; }
+.admin-demande-cours{ font-size:13px; color:var(--text-primary); }
+.admin-demande-meta{ font-size:11px; color:var(--text-secondary); margin-top:2px; }
+.admin-demande-actions{ display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; }
+.admin-empty{ font-size:13px; color:var(--text-light); font-style:italic; padding:8px 0; }
+
+/* Paramètres fenêtre dispos (admin) */
+.dispo-settings-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.dispo-settings-card{ background:var(--bg); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+.dispo-settings-session{ font-size:15px; font-weight:700; }
+.dispo-settings-status{ font-size:12px; padding:3px 10px; border-radius:50px; font-weight:600; }
+.dispo-settings-status.open{ background:rgba(76,175,80,.15); color:#2e7d32; }
+.dispo-settings-status.closed{ background:rgba(227,101,91,.1); color:#c0392b; }
 
 </style>
 </head>
@@ -588,6 +682,7 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
     <button class="tab active" data-view="grille">Grille d'horaire</button>
     <button class="tab" data-view="liste">Distribution des cours</button>
     <button class="tab" data-view="profs">Corps professoral</button>
+    <button class="tab" data-view="espace-prof">Mon espace</button>
   </div>
 
   <!-- VUE GRILLE -->
@@ -611,6 +706,37 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
       <button class="btn btn-primary" id="addProfBtn" data-admin-only>+ Ajouter un prof</button>
     </div>
     <div id="profsContainer"></div>
+
+    <!-- SECTION ADMIN : demandes de cours (visible admin seulement) -->
+    <div data-admin-only>
+      <div class="admin-section-title">
+        📋 Demandes de cours
+        <span class="tab-notif" id="demandesBadge" style="display:none;"></span>
+      </div>
+      <div id="adminDemandesContainer"><p class="admin-empty">Chargement…</p></div>
+
+      <!-- Paramètres fenêtre de disponibilités -->
+      <div class="admin-section-title" style="margin-top:32px;">⚙ Fenêtre de disponibilités</div>
+      <div id="dispoSettingsContainer"><p class="admin-empty">Chargement…</p></div>
+    </div>
+  </div>
+
+  <!-- VUE ESPACE PROF -->
+  <div class="tab-content" id="view-espace-prof">
+    <div class="espace-prof">
+      <div class="ep-section">
+        <div class="ep-section-title">👤 Mon profil</div>
+        <div id="ep-profil-content"><p class="admin-empty">Chargement…</p></div>
+      </div>
+      <div class="ep-section">
+        <div class="ep-section-title">📋 Cours souhaités</div>
+        <div id="ep-demandes-content"><p class="admin-empty">Chargement…</p></div>
+      </div>
+      <div class="ep-section">
+        <div class="ep-section-title">📅 Mes disponibilités</div>
+        <div id="ep-dispos-content"><p class="admin-empty">Chargement…</p></div>
+      </div>
+    </div>
   </div>
 
   <!-- Zone générée uniquement pour certains rapports PDF -->
@@ -652,15 +778,15 @@ async function getUserRole(userId){
 }
 
 function applyRoleUI(){
-  if(userRole === 'viewer'){
-    document.body.classList.add('viewer-mode');
-  } else {
-    document.body.classList.remove('viewer-mode');
-  }
+  const isProf   = userRole === 'prof';
+  const isViewer = userRole === 'viewer';
+  document.body.classList.toggle('viewer-mode', isViewer || isProf);
+  document.body.classList.toggle('prof-mode', isProf);
   const badge = document.getElementById('roleBadge');
   if(badge){
-    badge.textContent = userRole === 'admin' ? '⚙ Admin' : '👁 Lecteur';
-    badge.className   = 'role-badge ' + userRole;
+    const labels = { admin:'⚙ Admin', viewer:'👁 Lecteur', prof:'📋 Prof' };
+    badge.textContent = labels[userRole] || '👁 Lecteur';
+    badge.className   = 'role-badge ' + (userRole || 'viewer');
   }
 }
 /* ============================================================
@@ -899,12 +1025,17 @@ function buildGrid(etape, compact=false){
     const rowStart = (c.debut - H_DEBUT) + 2;          // +1 entête, +1 base grille
     const rowEnd   = (c.fin   - H_DEBUT) + 2;
     const block = document.createElement('div');
-    block.className = 'course-block' + (_idsEnConflit.has(c.id) ? ' conflit' : '');
-    block.style.gridColumn = (colJour + 2);            // +1 col heures, +1 base
+    const _bProf = PROFS.find(p=>p.id===c.profId);
+    const _isProfOwn = userRole==='prof' && profProfil && _bProf && _bProf.courriel && profProfil.email_cours &&
+      _bProf.courriel.toLowerCase()===profProfil.email_cours.toLowerCase();
+    block.className = 'course-block' + (_idsEnConflit.has(c.id) ? ' conflit' : '') + (_isProfOwn ? ' prof-own' : '');
+    block.style.gridColumn = (colJour + 2);
     block.style.gridRow = rowStart + ' / ' + rowEnd;
     block.style.background = couleurLocal(c.local);
-    block.title = _idsEnConflit.has(c.id) ? 'Conflit d\'horaire — cliquer pour modifier' : 'Cliquer pour modifier';
-    block.onclick = ()=> openCourseModal(c.id);
+    if(userRole !== 'prof'){
+      block.title = _idsEnConflit.has(c.id) ? 'Conflit d\'horaire — cliquer pour modifier' : 'Cliquer pour modifier';
+      block.onclick = ()=> openCourseModal(c.id);
+    } else if(_isProfOwn){ block.title = 'Votre cours'; }
     const profTxt = profLabel(c.profId);
     block.innerHTML =
       '<div class="cb-code">'+c.numeroCours+(c.section?' · '+c.section:'')+'</div>'+
@@ -2598,13 +2729,359 @@ document.getElementById('btnReset').onclick = reinitialiser;
   resize(); draw();
 })();
 
+/* ============================================================
+   RÔLE PROF — profil, disponibilités, demandes de cours
+   ============================================================ */
+
+let profProfil    = null;  // données prof_profiles de l'utilisateur courant
+let dispoSettings = null;  // paramètres de la fenêtre de dispos
+let _dispoSaveTimer = null;
+
+async function chargerProfProfil(){
+  try {
+    const { data, error } = await sb.from('prof_profiles').select('*').eq('user_id', currentUser.id).single();
+    if(error) throw error;
+    profProfil = data;
+  } catch(e){ profProfil = null; }
+}
+
+async function chargerDispoSettings(){
+  try {
+    const { data } = await sb.from('dispo_settings').select('*').eq('id',1).single();
+    dispoSettings = data || { a2026_ouverte:false, h2027_ouverte:false, a2026_message:'', h2027_message:'' };
+  } catch(e){ dispoSettings = { a2026_ouverte:false, h2027_ouverte:false, a2026_message:'', h2027_message:'' }; }
+}
+
+async function renderEspaceProf(){
+  await chargerProfProfil();
+  await chargerDispoSettings();
+  renderProfProfil();
+  await renderProfDemandes();
+  await renderProfDispos();
+}
+
+function renderProfProfil(){
+  const el = document.getElementById('ep-profil-content');
+  if(!profProfil){ el.innerHTML='<p class="admin-empty">Profil non trouvé. Contactez l\'administrateur.</p>'; return; }
+  const st = profProfil.statut==='temps_plein' ? 'Temps plein' : 'Contractuel·le';
+  el.innerHTML = `<div class="ep-profil-grid">
+    <div class="ep-profil-field"><div class="ep-profil-label">Prénom</div><div class="ep-profil-value">${esc(profProfil.prenom)}</div></div>
+    <div class="ep-profil-field"><div class="ep-profil-label">Nom</div><div class="ep-profil-value">${esc(profProfil.nom)}</div></div>
+    <div class="ep-profil-field"><div class="ep-profil-label">Courriel</div><div class="ep-profil-value">${esc(profProfil.email_cours||'—')}</div></div>
+    <div class="ep-profil-field"><div class="ep-profil-label">Statut</div><div class="ep-profil-value">${st}</div></div>
+  </div>`;
+}
+
+async function renderProfDemandes(){
+  const el = document.getElementById('ep-demandes-content');
+  if(!el) return;
+  el.innerHTML='<p style="color:var(--text-light);font-size:13px;">Chargement…</p>';
+
+  let demandes = [];
+  try {
+    const { data } = await sb.from('cours_demandes').select('*').eq('prof_user_id', currentUser.id).order('created_at',{ascending:false});
+    demandes = data || [];
+  } catch(e){}
+
+  // Sélecteur de session (utilise la session active)
+  const sessionOpts = Object.entries(SESSIONS).map(([k,v])=>`<option value="${k}" ${k===sessionActive?'selected':''}>${v.label}</option>`).join('');
+
+  // Cours disponibles pour la session active (dédupliqués)
+  const seen = new Set();
+  const coursDispo = [];
+  COURS_BRUTS.filter(c=>c.session===sessionActive).forEach(c=>{
+    const key = c.numeroCours+'|'+c.nomCours;
+    if(!seen.has(key)){ seen.add(key); coursDispo.push(c); }
+  });
+
+  const dejaDemandesSession = demandes.filter(d=>d.session===sessionActive).map(d=>d.numero_cours+'|'+d.nom_cours);
+
+  let html = '';
+
+  if(demandes.length===0){
+    html += '<p class="admin-empty">Aucune demande soumise pour le moment.</p>';
+  } else {
+    html += '<div class="demandes-list">';
+    demandes.forEach(d=>{
+      const badge = d.statut==='en_attente' ? '<span class="statut-badge en_attente">⏳ En attente</span>'
+                  : d.statut==='accepte'    ? '<span class="statut-badge accepte">✅ Accepté</span>'
+                  :                           '<span class="statut-badge refuse">❌ Refusé</span>';
+      const note  = d.note_admin ? `<div style="font-size:11px;color:var(--text-light);margin-top:2px;">Note : ${esc(d.note_admin)}</div>` : '';
+      const del   = d.statut==='en_attente' ? `<button class="icon-btn icon-btn-danger" onclick="retirerDemande(${d.id})" title="Retirer">✕</button>` : '';
+      html += `<div class="demande-item">
+        <div class="demande-info">
+          <div class="demande-nom">${esc(d.nom_cours)}</div>
+          <div class="demande-meta">${esc(d.numero_cours)} · ${d.session==='A2026'?'Automne 2026':'Hiver 2027'}</div>
+          ${note}
+        </div>
+        <div class="demande-actions">${badge}${del}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  const opts = coursDispo.map(c=>{
+    const key = c.numeroCours+'|'+c.nomCours;
+    const deja = dejaDemandesSession.includes(key);
+    return `<option value="${esc(key)}" ${deja?'disabled':''}>${esc(c.nomCours)} (${esc(c.numeroCours)})${deja?' — déjà demandé':''}</option>`;
+  }).join('');
+
+  html += `<div class="demande-add-row">
+    <div class="field"><label>Session</label><select id="ep-demande-session" onchange="renderProfDemandes()">${sessionOpts}</select></div>
+    <div class="field" style="flex:2;"><label>Cours à demander</label><select id="ep-demande-cours">${opts||'<option disabled>Aucun cours disponible</option>'}</select></div>
+    <button class="btn btn-primary btn-sm" onclick="ajouterDemande()" style="flex-shrink:0;">+ Ajouter</button>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+async function ajouterDemande(){
+  const sessionEl = document.getElementById('ep-demande-session');
+  const coursEl   = document.getElementById('ep-demande-cours');
+  if(!coursEl || !coursEl.value) return;
+  const [numeroCours, nomCours] = coursEl.value.split('|');
+  const session = sessionEl ? sessionEl.value : sessionActive;
+  try {
+    const { error } = await sb.from('cours_demandes').insert({ prof_user_id:currentUser.id, numero_cours:numeroCours, nom_cours:nomCours, session, statut:'en_attente' });
+    if(error) throw error;
+    await renderProfDemandes();
+  } catch(e){ alert('Erreur : '+(e.message||e)); }
+}
+
+async function retirerDemande(id){
+  if(!confirm('Retirer cette demande ?')) return;
+  try { await sb.from('cours_demandes').delete().eq('id',id); await renderProfDemandes(); } catch(e){}
+}
+
+async function renderProfDispos(){
+  const el = document.getElementById('ep-dispos-content');
+  if(!el) return;
+
+  let dispos = [];
+  try {
+    const { data } = await sb.from('disponibilites').select('*').eq('prof_user_id',currentUser.id).eq('session',sessionActive);
+    dispos = data || [];
+  } catch(e){}
+
+  const fenetreOuverte = sessionActive==='A2026' ? dispoSettings?.a2026_ouverte : dispoSettings?.h2027_ouverte;
+  const messageFenetre = sessionActive==='A2026' ? dispoSettings?.a2026_message : dispoSettings?.h2027_message;
+
+  const PLAGES = [
+    { key:'matin',      label:'Matin',       sub:'9h – 12h' },
+    { key:'apres_midi', label:'Après-midi',  sub:'13h – 16h' },
+    { key:'soir',       label:'Soir',        sub:'16h – 19h' }
+  ];
+
+  const dispoMap = {};
+  dispos.forEach(d=>{ dispoMap[d.jour+'|'+d.plage]=d; });
+
+  const bannerHtml = fenetreOuverte
+    ? `<div class="dispo-fenetre-banner ouverte">✅ Fenêtre ouverte — disponibilités modifiables${messageFenetre?' · '+esc(messageFenetre):''}.</div>`
+    : `<div class="dispo-fenetre-banner fermee">🔒 Fenêtre fermée${dispos.length>0?' — vos disponibilités sont enregistrées.':' — disponible prochainement.'}</div>`;
+
+  const sessionOpts = Object.entries(SESSIONS).map(([k,v])=>`<option value="${k}" ${k===sessionActive?'selected':''}>${v.label}</option>`).join('');
+
+  let grille = '<div class="dispo-grid">';
+  grille += '<div class="dispo-corner"></div>';
+  JOURS.forEach(j=>{ grille += `<div class="dispo-head">${j.substring(0,3)}</div>`; });
+  PLAGES.forEach(p=>{
+    grille += `<div class="dispo-rowlabel">${p.label}<br><span style="font-size:9px;font-weight:400;">${p.sub}</span></div>`;
+    JOURS.forEach(j=>{
+      const d = dispoMap[j+'|'+p.key];
+      const sel = d?.disponible ? ' sel' : '';
+      const locked = !fenetreOuverte ? ' dispo-locked' : '';
+      grille += `<div class="dispo-cell${sel}${locked}" data-jour="${j}" data-plage="${p.key}" onclick="toggleDispoCell(this)"></div>`;
+    });
+  });
+  grille += '</div>';
+
+  let notesHtml = '<div class="dispo-day-notes">';
+  JOURS.forEach(j=>{
+    const anyDispo = dispoMap[j+'|matin'] || dispoMap[j+'|apres_midi'] || dispoMap[j+'|soir'];
+    const noteVal = anyDispo?.note || '';
+    notesHtml += `<div class="dispo-note-field">
+      <label>${j}</label>
+      <textarea id="dispo-note-${j}" rows="2" placeholder="Note spéciale…" ${!fenetreOuverte?'disabled':''} onchange="scheduleSaveDispo()">${esc(noteVal)}</textarea>
+    </div>`;
+  });
+  notesHtml += '</div>';
+
+  el.innerHTML = `
+    <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+      <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);">Session</label>
+      <select style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:inherit;font-size:13px;color:var(--text-primary);" onchange="switchDispoSession(this.value)">${sessionOpts}</select>
+    </div>
+    ${bannerHtml}
+    ${grille}
+    ${notesHtml}
+    <div class="dispo-autosave" id="dispoAutosaveStatus"></div>`;
+}
+
+function switchDispoSession(session){
+  sessionActive = session;
+  document.getElementById('sessionSelect').value = session;
+  renderProfDispos();
+}
+
+function toggleDispoCell(el){
+  const fenetreOuverte = sessionActive==='A2026' ? dispoSettings?.a2026_ouverte : dispoSettings?.h2027_ouverte;
+  if(!fenetreOuverte) return;
+  el.classList.toggle('sel');
+  scheduleSaveDispo();
+}
+
+function scheduleSaveDispo(){
+  const s = document.getElementById('dispoAutosaveStatus');
+  if(s) s.textContent='⏳ Sauvegarde…';
+  clearTimeout(_dispoSaveTimer);
+  _dispoSaveTimer = setTimeout(saveProfDispos, 1200);
+}
+
+async function saveProfDispos(){
+  const s = document.getElementById('dispoAutosaveStatus');
+  const rows = [];
+  document.querySelectorAll('#ep-dispos-content .dispo-cell[data-jour]').forEach(cell=>{
+    const jour = cell.dataset.jour;
+    const plage = cell.dataset.plage;
+    const disponible = cell.classList.contains('sel');
+    const noteEl = document.getElementById('dispo-note-'+jour);
+    const note = noteEl ? noteEl.value.trim() : '';
+    rows.push({ prof_user_id:currentUser.id, session:sessionActive, jour, plage, disponible, note });
+  });
+  try {
+    for(const row of rows){
+      await sb.from('disponibilites').upsert(row, { onConflict:'prof_user_id,session,jour,plage' });
+    }
+    if(s){ s.textContent='✓ Sauvegardé'; setTimeout(()=>{ if(s) s.textContent=''; },2500); }
+  } catch(e){ if(s) s.textContent='⚠ Erreur de sauvegarde'; }
+}
+
+/* ============================================================
+   ADMIN — demandes de cours et paramètres fenêtre dispos
+   ============================================================ */
+
+async function chargerAdminSection(){
+  await chargerDispoSettings();
+  await renderAdminDemandes();
+  renderDispoSettingsAdmin();
+}
+
+async function renderAdminDemandes(){
+  const el    = document.getElementById('adminDemandesContainer');
+  const badge = document.getElementById('demandesBadge');
+  if(!el) return;
+
+  let demandes = [];
+  try {
+    const { data } = await sb.from('cours_demandes').select('*, prof_profiles(nom,prenom,email_cours)').order('created_at',{ascending:false});
+    demandes = data || [];
+  } catch(e){}
+
+  const enAttente = demandes.filter(d=>d.statut==='en_attente').length;
+  if(badge){ badge.textContent=enAttente; badge.style.display=enAttente>0?'inline-flex':'none'; }
+  // Badge sur l'onglet Corps professoral
+  const tabProfs = document.querySelector('.tab[data-view="profs"]');
+  if(tabProfs){
+    let bt = tabProfs.querySelector('.tab-notif');
+    if(!bt){ bt=document.createElement('span'); bt.className='tab-notif'; tabProfs.appendChild(bt); }
+    bt.textContent=enAttente; bt.style.display=enAttente>0?'inline-flex':'none';
+  }
+
+  if(demandes.length===0){ el.innerHTML='<p class="admin-empty">Aucune demande soumise.</p>'; return; }
+
+  let html = '';
+  demandes.forEach(d=>{
+    const p = d.prof_profiles;
+    const pNom = p ? esc((p.prenom+' '+p.nom).trim()) : 'Prof inconnu';
+    const badge = d.statut==='en_attente' ? '<span class="statut-badge en_attente">⏳ En attente</span>'
+                : d.statut==='accepte'    ? '<span class="statut-badge accepte">✅ Accepté</span>'
+                :                           '<span class="statut-badge refuse">❌ Refusé</span>';
+    const actions = d.statut==='en_attente' ? `
+      <button class="btn btn-sm" style="background:rgba(76,175,80,.1);color:#2e7d32;border-color:rgba(76,175,80,.4);" onclick="traiterDemande(${d.id},'accepte')">✓ Accepter</button>
+      <button class="btn btn-sm btn-danger" onclick="traiterDemande(${d.id},'refuse')">✕ Refuser</button>` : '';
+    html += `<div class="admin-demande-item">
+      <div class="admin-demande-info">
+        <div class="admin-demande-prof">${pNom}</div>
+        <div class="admin-demande-cours">${esc(d.nom_cours)} <span style="color:var(--text-light);font-size:12px;">(${esc(d.numero_cours)})</span></div>
+        <div class="admin-demande-meta">${d.session==='A2026'?'Automne 2026':'Hiver 2027'} · ${new Date(d.created_at).toLocaleDateString('fr-CA')}</div>
+        ${d.note_admin?`<div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Note : ${esc(d.note_admin)}</div>`:''}
+      </div>
+      <div class="admin-demande-actions">${badge}${actions}</div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+async function traiterDemande(id, statut){
+  let noteAdmin = '';
+  if(statut==='refuse'){
+    const r = prompt('Note pour le prof (optionnel) :');
+    if(r===null) return;
+    noteAdmin = r;
+  }
+  try {
+    await sb.from('cours_demandes').update({ statut, note_admin:noteAdmin, updated_at:new Date().toISOString() }).eq('id',id);
+    await renderAdminDemandes();
+  } catch(e){ alert('Erreur : '+(e.message||e)); }
+}
+
+function renderDispoSettingsAdmin(){
+  const el = document.getElementById('dispoSettingsContainer');
+  if(!el || !dispoSettings) return;
+  const sessions = [
+    { key:'A2026', label:'Automne 2026', ouverteKey:'a2026_ouverte', msgKey:'a2026_message' },
+    { key:'H2027', label:'Hiver 2027',   ouverteKey:'h2027_ouverte', msgKey:'h2027_message' }
+  ];
+  let html = '<div class="dispo-settings-grid">';
+  sessions.forEach(s=>{
+    const ouverte = dispoSettings[s.ouverteKey];
+    html += `<div class="dispo-settings-card">
+      <div class="dispo-settings-session">${s.label}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <span style="font-size:13px;font-weight:600;">Fenêtre de disponibilités</span>
+        <span class="dispo-settings-status ${ouverte?'open':'closed'}">${ouverte?'Ouverte':'Fermée'}</span>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Message aux profs (optionnel)</label>
+        <input id="dispo-msg-${s.key}" value="${esc(dispoSettings[s.msgKey]||'')}" placeholder="ex. Soumettez avant le 15 août">
+      </div>
+      <button class="btn ${ouverte?'btn-danger':'btn-primary'} btn-sm" onclick="toggleFenetreDispos('${s.key}',${!ouverte})">
+        ${ouverte?'🔒 Fermer la fenêtre':'🔓 Ouvrir la fenêtre'}
+      </button>
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function toggleFenetreDispos(session, ouverte){
+  const msgKey     = session==='A2026' ? 'a2026_message' : 'h2027_message';
+  const ouverteKey = session==='A2026' ? 'a2026_ouverte' : 'h2027_ouverte';
+  const msgEl = document.getElementById('dispo-msg-'+session);
+  const message = msgEl ? msgEl.value.trim() : '';
+  try {
+    const upd = { updated_at:new Date().toISOString() };
+    upd[ouverteKey]=ouverte; upd[msgKey]=message;
+    await sb.from('dispo_settings').update(upd).eq('id',1);
+    dispoSettings[ouverteKey]=ouverte; dispoSettings[msgKey]=message;
+    renderDispoSettingsAdmin();
+  } catch(e){ alert('Erreur : '+(e.message||e)); }
+}
+
 /* ---- Démarrage ---- */
 async function _initApp(){
   if(!await chargerSauvegarde()){ chargerDonneesParDefaut(); }
   majStatutSauvegarde(true);
   const _c0 = detecterConflits(); _idsEnConflit = _c0.ids; _listeConflits = _c0.liste;
   renderConflits(); renderChips(); renderSchedule();
-  renderLegend(); buildListe(); renderProfs();
+  renderLegend(); buildListe();
+  if(userRole === 'prof'){
+    await renderEspaceProf();
+    setActiveView('espace-prof');
+  } else {
+    renderProfs();
+    if(userRole === 'admin') chargerAdminSection().catch(console.error);
+  }
   if(window.lucide) lucide.createIcons();
 }
 
@@ -2649,8 +3126,8 @@ document.getElementById('loginPassword').addEventListener('keydown', e=>{
 /* --- Déconnexion --- */
 document.getElementById('logoutBtn').addEventListener('click', async ()=>{
   await sb.auth.signOut();
-  currentUser = null; userRole = 'viewer';
-  document.body.classList.remove('viewer-mode');
+  currentUser = null; userRole = 'viewer'; profProfil = null; dispoSettings = null;
+  document.body.classList.remove('viewer-mode', 'prof-mode');
   document.getElementById('loginOverlay').classList.remove('hidden');
 });
 
