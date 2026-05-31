@@ -486,7 +486,8 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
 /* Masquage des éléments admin pour les lecteurs */
 .viewer-mode [data-admin-only]{ display:none !important; }
 /* Barre auth (rôle + déconnexion) */
-.auth-bar{ display:flex; align-items:center; gap:8px; flex-shrink:0; margin-top:4px; }
+.auth-bar{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+.auth-bar-top{ display:flex; align-items:center; gap:8px; }
 .role-badge{
   display:inline-flex; align-items:center; gap:6px; padding:5px 12px;
   border-radius:50px; font-size:12px; font-weight:600;
@@ -524,14 +525,16 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
       <h1>Planificateur d'horaire</h1>
       <p>Design graphique 61508 — La Cité · <span id="sessionLabel">Automne 2026</span></p>
     </div>
-    <div class="theme-toggle" id="themeToggle">
-      <span class="theme-toggle-icon" id="themeIcon">🌙</span>
-      <span class="theme-toggle-label" id="themeLabel">Mode sombre</span>
-      <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
-    </div>
     <div class="auth-bar">
-      <span id="roleBadge" class="role-badge">…</span>
-      <button class="btn btn-sm" id="logoutBtn">Déconnexion</button>
+      <div class="auth-bar-top">
+        <span id="roleBadge" class="role-badge">…</span>
+        <button class="btn btn-sm" id="logoutBtn">Déconnexion</button>
+      </div>
+      <div class="theme-toggle" id="themeToggle">
+        <span class="theme-toggle-icon" id="themeIcon">🌙</span>
+        <span class="theme-toggle-label" id="themeLabel">Mode sombre</span>
+        <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
+      </div>
     </div>
   </div>
 
@@ -613,7 +616,7 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
   <!-- Zone générée uniquement pour certains rapports PDF -->
   <div id="printReportsContainer" aria-hidden="true"></div>
 
-  <div class="footer-note">v2.0 — moteur algorithmique bonifié (diagnostic, propositions multiples, score global, simulation avant application) + historique de versions daté (sauvegarder / restaurer) + génération automatique (8 règles, dont le regroupement des cours d'un même prof contractuel sur une même journée) + statut des profs + verrou des cours. Affichage, édition, sauvegarde, conflits et qualifications inclus. Les exports Excel/PDF viendront à l'étape suivante.</div>
+  <div class="footer-note">Version bêta — Planificateur d'horaire · Design graphique, La Cité Collégiale</div>
 </div>
 
 <!-- Fenêtre modale réutilisable -->
