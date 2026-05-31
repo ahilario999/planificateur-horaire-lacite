@@ -2764,12 +2764,54 @@ function renderProfProfil(){
   const el = document.getElementById('ep-profil-content');
   if(!profProfil){ el.innerHTML='<p class="admin-empty">Profil non trouvé. Contactez l\'administrateur.</p>'; return; }
   const st = profProfil.statut==='temps_plein' ? 'Temps plein' : 'Contractuel·le';
-  el.innerHTML = `<div class="ep-profil-grid">
-    <div class="ep-profil-field"><div class="ep-profil-label">Prénom</div><div class="ep-profil-value">${esc(profProfil.prenom)}</div></div>
-    <div class="ep-profil-field"><div class="ep-profil-label">Nom</div><div class="ep-profil-value">${esc(profProfil.nom)}</div></div>
-    <div class="ep-profil-field"><div class="ep-profil-label">Courriel</div><div class="ep-profil-value">${esc(profProfil.email_cours||'—')}</div></div>
-    <div class="ep-profil-field"><div class="ep-profil-label">Statut</div><div class="ep-profil-value">${st}</div></div>
-  </div>`;
+  el.innerHTML = `
+    <div class="ep-profil-grid">
+      <div class="field">
+        <label>Prénom</label>
+        <input id="pp-prenom" value="${esc(profProfil.prenom)}" placeholder="Prénom">
+      </div>
+      <div class="field">
+        <label>Nom</label>
+        <input id="pp-nom" value="${esc(profProfil.nom)}" placeholder="Nom">
+      </div>
+      <div class="field">
+        <label>Courriel</label>
+        <input id="pp-email" value="${esc(profProfil.email_cours||'')}" placeholder="prenom.nom@exemple.com">
+      </div>
+      <div class="field">
+        <label>Statut <span style="font-size:10px;color:var(--text-light);">(modifiable par l'admin)</span></label>
+        <input value="${st}" disabled style="opacity:.55;cursor:not-allowed;">
+      </div>
+      <div class="field">
+        <label>Numéro d'employé</label>
+        <input id="pp-employe" value="${esc(profProfil.numero_employe||'')}" placeholder="ex. 123456">
+      </div>
+      <div class="field">
+        <label>Téléphone</label>
+        <input id="pp-tel" value="${esc(profProfil.telephone||'')}" placeholder="ex. 613-742-2483">
+      </div>
+    </div>
+    <div style="margin-top:18px;">
+      <button class="btn btn-primary" onclick="sauvegarderProfil()">Sauvegarder mon profil</button>
+    </div>`;
+}
+
+async function sauvegarderProfil(){
+  if(!confirm('Confirmer la mise à jour de votre profil ?')) return;
+  const prenom        = document.getElementById('pp-prenom')?.value.trim() || '';
+  const nom           = document.getElementById('pp-nom')?.value.trim() || '';
+  const email_cours   = document.getElementById('pp-email')?.value.trim() || '';
+  const numero_employe = document.getElementById('pp-employe')?.value.trim() || '';
+  const telephone     = document.getElementById('pp-tel')?.value.trim() || '';
+  if(!prenom || !nom){ alert('Le prénom et le nom sont obligatoires.'); return; }
+  try {
+    const { error } = await sb.from('prof_profiles')
+      .update({ prenom, nom, email_cours, numero_employe, telephone })
+      .eq('user_id', currentUser.id);
+    if(error) throw error;
+    profProfil = { ...profProfil, prenom, nom, email_cours, numero_employe, telephone };
+    alert('Profil mis à jour.');
+  } catch(e){ alert('Erreur : '+(e.message||e)); }
 }
 
 async function renderProfDemandes(){
