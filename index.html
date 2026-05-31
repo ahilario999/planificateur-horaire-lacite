@@ -258,6 +258,10 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
 .icon-btn:hover{ border-color:var(--primary); color:var(--primary); background:var(--bg); }
 .icon-btn-danger:hover{ border-color:var(--loc-comodal); color:var(--loc-comodal); }
 .icon-btn-lock{ border-color:var(--loc-enligne); color:var(--loc-enligne); background:rgba(213,160,33,.1); }
+.prof-icon-cal{ width:15px; height:15px; vertical-align:middle; margin:0 3px; cursor:default; }
+.prof-icon-cal.green{ color:#22c55e; }
+.prof-icon-cal.grey{ color:#bbb; }
+.prof-status-flag{ font-size:14px; margin:0 2px; cursor:default; vertical-align:middle; }
 
 /* Modale */
 .modal-overlay{ position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.5); backdrop-filter:blur(3px);
@@ -1672,13 +1676,24 @@ function renderProfs(){
   let rows = tri.map(p=>{
     const mail = p.courriel ? '<a class="email-link" href="mailto:'+esc(p.courriel)+'">'+esc(p.courriel)+'</a>' : '<span class="muted">—</span>';
     const tel = p.telephone ? esc(p.telephone) : '<span class="muted">—</span>';
+    // Icônes de statut (visibles seulement pour admin)
+    const st = profStatuts[(p.courriel||'').toLowerCase()];
+    const flagHtml = (st && st.hasPendingRequest)
+      ? '<span class="prof-status-flag" title="Demande(s) de cours en attente">🚩</span>'
+      : '';
+    const calHtml = st
+      ? (st.hasDispo
+        ? '<i data-lucide="calendar-check" class="prof-icon-cal green" title="Disponibilités entrées"></i>'
+        : '<i data-lucide="calendar-x" class="prof-icon-cal grey" title="Aucune disponibilité entrée"></i>')
+      : '';
     return '<tr>'+
       '<td>'+esc(p.prenom||'')+'</td>'+
       '<td>'+esc(p.nom||'')+'</td>'+
       '<td>'+mail+'</td>'+
       '<td>'+tel+'</td>'+
       '<td>'+nbCoursProf(p.id)+'</td>'+
-      '<td class="td-actions"><button class="icon-btn" data-admin-only title="Modifier" data-pedit="'+p.id+'">✎</button>'+
+      '<td class="td-actions">'+flagHtml+calHtml+
+      '<button class="icon-btn" data-admin-only title="Modifier" data-pedit="'+p.id+'">✎</button>'+
       '<button class="icon-btn icon-btn-danger" data-admin-only title="Supprimer" data-pdel="'+p.id+'">🗑</button></td></tr>';
   }).join('');
   if(!rows) rows = '<tr><td colspan="6" class="muted" style="text-align:center;padding:24px;">Aucun prof. Cliquez « Ajouter un prof ».</td></tr>';
@@ -1692,6 +1707,7 @@ function renderProfs(){
     '<th class="th-actions">Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   cont.querySelectorAll('[data-pedit]').forEach(b=> b.onclick = ()=> openProfModal(+b.dataset.pedit));
   cont.querySelectorAll('[data-pdel]').forEach(b=> b.onclick = ()=> supprimerProf(+b.dataset.pdel));
+  if(window.lucide) lucide.createIcons();
 }
 
 /* ============================================================
@@ -2735,6 +2751,7 @@ document.getElementById('btnReset').onclick = reinitialiser;
 
 let profProfil    = null;  // données prof_profiles de l'utilisateur courant
 let dispoSettings = null;  // paramètres de la fenêtre de dispos
+let profStatuts   = {};    // statuts admin : { [email_cours_lower]: { hasPendingRequest, hasDispo } }
 let _dispoSaveTimer = null;
 
 async function chargerProfProfil(){
@@ -3002,8 +3019,31 @@ async function saveProfDispos(){
    ADMIN — demandes de cours et paramètres fenêtre dispos
    ============================================================ */
 
+async function chargerStatutsProfs(){
+  profStatuts = {};
+  if(!sb || !currentUser) return;
+  try {
+    const [{ data: profiles }, { data: demandes }, { data: dispos }] = await Promise.all([
+      sb.from('prof_profiles').select('user_id, email_cours'),
+      sb.from('cours_demandes').select('prof_user_id').eq('statut','en_attente'),
+      sb.from('disponibilites').select('prof_user_id')
+    ]);
+    const userIdsAvecDemande = new Set((demandes||[]).map(d=>d.prof_user_id));
+    const userIdsAvecDispo   = new Set((dispos||[]).map(d=>d.prof_user_id));
+    (profiles||[]).forEach(p=>{
+      if(!p.email_cours) return;
+      profStatuts[p.email_cours.toLowerCase()] = {
+        hasPendingRequest: userIdsAvecDemande.has(p.user_id),
+        hasDispo: userIdsAvecDispo.has(p.user_id)
+      };
+    });
+  } catch(e){ console.warn('[chargerStatutsProfs]', e); }
+}
+
 async function chargerAdminSection(){
   await chargerDispoSettings();
+  await chargerStatutsProfs();
+  renderProfs(); // Rafraîchit avec les icônes de statut
   await renderAdminDemandes();
   renderDispoSettingsAdmin();
 }
@@ -3168,7 +3208,7 @@ document.getElementById('loginPassword').addEventListener('keydown', e=>{
 /* --- Déconnexion --- */
 document.getElementById('logoutBtn').addEventListener('click', async ()=>{
   await sb.auth.signOut();
-  currentUser = null; userRole = 'viewer'; profProfil = null; dispoSettings = null;
+  currentUser = null; userRole = 'viewer'; profProfil = null; dispoSettings = null; profStatuts = {};
   document.body.classList.remove('viewer-mode', 'prof-mode');
   document.getElementById('loginOverlay').classList.remove('hidden');
 });
