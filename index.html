@@ -1752,19 +1752,64 @@ function renderProfs(){
 }
 
 /* --- Modal ajout / modification roster --- */
-function openRosterModal(rosterId){
+async function openRosterModal(rosterId){
   const editing = rosterId != null;
   const r = editing ? rosterProfs.find(x=>x.id===rosterId) : { prenom:'', nom:'', email:'', telephone:'', numero_employe:'', statut:'contractuel', actif:true, notes:'' };
   if(editing && !r) return;
 
-  // Trouver le prof local pour les données horaire
   const profLocal = editing ? PROFS.find(p=> p.courriel && r.email && p.courriel.toLowerCase()===r.email.toLowerCase()) : null;
   _dispoTemp  = new Set(profLocal ? (profLocal.dispos  || []) : []);
   _qualifTemp = new Set(profLocal ? (profLocal.qualifications || []) : []);
 
+  // ── Charger données Supabase si le prof a un compte ──
+  let demandesEnAttente = [];
+  let dispoSource = 'local';
+  if(editing && r.user_id && sb){
+    try {
+      const [{ data: demData }, { data: dispData }] = await Promise.all([
+        sb.from('cours_demandes').select('*').eq('prof_user_id', r.user_id).eq('statut','en_attente').order('created_at',{ascending:false}),
+        sb.from('disponibilites').select('*').eq('prof_user_id', r.user_id).eq('session', sessionActive)
+      ]);
+      demandesEnAttente = demData || [];
+      if(dispData && dispData.length > 0){
+        _dispoTemp = new Set(dispData.filter(d=>d.disponible).map(d=>d.jour+'|'+d.plage));
+        dispoSource = 'supabase';
+      }
+    } catch(e){ console.warn('[openRosterModal]', e); }
+  }
+
+  // ── Section demandes en attente (item 8) ──
+  let demandesSection = '';
+  if(editing && r.user_id && demandesEnAttente.length > 0){
+    demandesSection = '<div class="form-section-title">🚩 Demandes de cours en attente <span class="hint">('+demandesEnAttente.length+')</span></div>'+
+      '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">';
+    demandesEnAttente.forEach(d=>{
+      const sess = d.session==='A2026'?'Automne 2026':'Hiver 2027';
+      demandesSection +=
+        '<div class="admin-demande-item">'+
+        '<div class="admin-demande-info">'+
+        '<div class="admin-demande-cours">'+esc(d.nom_cours)+' <span style="color:var(--text-light);font-size:12px;">('+esc(d.numero_cours)+')</span></div>'+
+        '<div class="admin-demande-meta">'+sess+' · '+new Date(d.created_at).toLocaleDateString('fr-CA')+'</div>'+
+        '</div>'+
+        '<div class="admin-demande-actions" style="gap:6px;">'+
+        '<button class="btn btn-sm" style="background:rgba(76,175,80,.1);color:#2e7d32;border-color:rgba(76,175,80,.4);" '+
+          'onclick="traiterDemandeModal('+d.id+',\'accepte\',\''+r.user_id+'\',\''+esc(d.numero_cours)+'\','+rosterId+')">✓ Accepter</button>'+
+        '<button class="btn btn-sm btn-danger" '+
+          'onclick="traiterDemandeModal('+d.id+',\'refuse\',\''+r.user_id+'\',\'\','+rosterId+')">✕ Refuser</button>'+
+        '</div></div>';
+    });
+    demandesSection += '</div>';
+  }
+
+  // ── Indicateur source des dispos (item 9) ──
+  const dispoHint = dispoSource==='supabase'
+    ? ' <span class="hint" style="color:#22c55e;">✓ Entrées par le prof</span>'
+    : (r.user_id
+        ? ' <span class="hint">Prof n\'a pas encore entré ses dispos</span>'
+        : ' <span class="hint">Admin seulement (pas de compte)</span>');
+
   const body =
     '<div class="form-error" id="formErr"></div>'+
-    // ── Section 1 : Info administrative ──
     '<div class="form-section-title">Informations</div>'+
     '<div class="form-grid">'+
     '<div class="field"><label>Prénom</label><input id="r-prenom" value="'+esc(r.prenom||'')+'"></div>'+
@@ -1786,13 +1831,11 @@ function openRosterModal(rosterId){
     '<div class="field full"><label>Notes <span class="hint">(internes, non visibles par le prof)</span></label>'+
     '<textarea id="r-notes" rows="2" style="width:100%;resize:vertical;">'+esc(r.notes||'')+'</textarea></div>'+
     '</div>'+
-    // ── Section 2 : Disponibilités ──
-    '<div class="form-section-title">Disponibilités <span class="hint">(cliquez les demi-journées disponibles)</span></div>'+
+    demandesSection+
+    '<div class="form-section-title">Disponibilités'+dispoHint+'</div>'+
     '<div class="form-grid"><div class="field full">'+buildDispoGrid()+'</div></div>'+
-    // ── Section 3 : Cours assignés ──
     '<div class="form-section-title">Cours assignés dans l\'horaire</div>'+
     buildEnseignes(profLocal ? profLocal.id : null)+
-    // ── Section 4 : Qualifications ──
     '<div class="form-section-title">Cours que ce prof PEUT enseigner <span class="hint">(qualifications pour le générateur)</span></div>'+
     buildQualifList(profLocal ? profLocal.id : null);
 
@@ -1801,6 +1844,36 @@ function openRosterModal(rosterId){
     '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>'+
     '<button class="btn btn-primary" onclick="enregistrerRosterEntry('+(editing?rosterId:'null')+')">Enregistrer</button>';
   openModal(editing ? 'Modifier le prof' : 'Ajouter un prof', body, foot);
+}
+
+/* --- Approuver / refuser depuis le modal d'un prof (item 8) --- */
+async function traiterDemandeModal(id, statut, profUserId, numeroCours, rosterId){
+  let noteAdmin = '';
+  if(statut==='refuse'){
+    const r = prompt('Note pour le prof (optionnel) :');
+    if(r===null) return;
+    noteAdmin = r;
+  }
+  try {
+    await sb.from('cours_demandes').update({ statut, note_admin:noteAdmin, updated_at:new Date().toISOString() }).eq('id',id);
+    if(statut==='accepte' && profUserId && numeroCours){
+      const rProf = rosterProfs.find(rr=>rr.user_id===profUserId);
+      if(rProf){
+        const profLocal = PROFS.find(p=>p.courriel && p.courriel.toLowerCase()===rProf.email.toLowerCase());
+        if(profLocal){
+          if(!profLocal.qualifications) profLocal.qualifications = [];
+          if(!profLocal.qualifications.includes(numeroCours)){
+            profLocal.qualifications.push(numeroCours);
+            sauvegarder();
+          }
+        }
+      }
+    }
+    await chargerStatutsProfs();
+    renderProfs();
+    // Ré-ouvrir le modal rafraîchi
+    if(rosterId != null) openRosterModal(rosterId);
+  } catch(e){ alert('Erreur : '+(e.message||e)); }
 }
 
 async function enregistrerRosterEntry(rosterId){
@@ -1835,6 +1908,20 @@ async function enregistrerRosterEntry(rosterId){
       Object.assign(profLocal, { prenom, nom, telephone, statut: localStatut, dispos: Array.from(_dispoTemp), qualifications });
     } else if(rosterId==null){
       PROFS.push({ id: nextProfId(), prenom, nom, courriel: email, telephone, statut: localStatut, dispos: Array.from(_dispoTemp), qualifications });
+    }
+    // Sync dispos vers Supabase si le prof a un compte (admin peut modifier les dispos)
+    const rosterEntry = rosterId != null ? rosterProfs.find(x=>x.id===rosterId) : null;
+    if(rosterEntry?.user_id && sb){
+      try {
+        for(const j of JOURS){
+          for(const [code] of PERIODES){
+            await sb.from('disponibilites').upsert({
+              prof_user_id: rosterEntry.user_id, session: sessionActive,
+              jour: j, plage: code, disponible: _dispoTemp.has(j+'|'+code)
+            }, { onConflict:'prof_user_id,session,jour,plage' });
+          }
+        }
+      } catch(e){ console.warn('[enregistrerRosterEntry] dispo sync:', e); }
     }
     closeModal();
     await chargerRoster();
@@ -3265,8 +3352,8 @@ async function renderAdminDemandes(){
                 : d.statut==='accepte'    ? '<span class="statut-badge accepte">✅ Accepté</span>'
                 :                           '<span class="statut-badge refuse">❌ Refusé</span>';
     const actions = d.statut==='en_attente' ? `
-      <button class="btn btn-sm" style="background:rgba(76,175,80,.1);color:#2e7d32;border-color:rgba(76,175,80,.4);" onclick="traiterDemande(${d.id},'accepte')">✓ Accepter</button>
-      <button class="btn btn-sm btn-danger" onclick="traiterDemande(${d.id},'refuse')">✕ Refuser</button>` : '';
+      <button class="btn btn-sm" style="background:rgba(76,175,80,.1);color:#2e7d32;border-color:rgba(76,175,80,.4);" onclick="traiterDemande(${d.id},'accepte','${d.prof_user_id}','${esc(d.numero_cours)}')">✓ Accepter</button>
+      <button class="btn btn-sm btn-danger" onclick="traiterDemande(${d.id},'refuse','${d.prof_user_id}','')">✕ Refuser</button>` : '';
     html += `<div class="admin-demande-item">
       <div class="admin-demande-info">
         <div class="admin-demande-prof">${pNom}</div>
@@ -3280,7 +3367,7 @@ async function renderAdminDemandes(){
   el.innerHTML = html;
 }
 
-async function traiterDemande(id, statut){
+async function traiterDemande(id, statut, profUserId, numeroCours){
   let noteAdmin = '';
   if(statut==='refuse'){
     const r = prompt('Note pour le prof (optionnel) :');
@@ -3289,7 +3376,23 @@ async function traiterDemande(id, statut){
   }
   try {
     await sb.from('cours_demandes').update({ statut, note_admin:noteAdmin, updated_at:new Date().toISOString() }).eq('id',id);
+    // Ajouter aux qualifications locales si accepté
+    if(statut==='accepte' && profUserId && numeroCours){
+      const rProf = rosterProfs.find(rr=>rr.user_id===profUserId);
+      if(rProf){
+        const profLocal = PROFS.find(p=>p.courriel && p.courriel.toLowerCase()===rProf.email.toLowerCase());
+        if(profLocal){
+          if(!profLocal.qualifications) profLocal.qualifications = [];
+          if(!profLocal.qualifications.includes(numeroCours)){
+            profLocal.qualifications.push(numeroCours);
+            sauvegarder();
+          }
+        }
+      }
+    }
     await renderAdminDemandes();
+    await chargerStatutsProfs();
+    renderProfs();
   } catch(e){ alert('Erreur : '+(e.message||e)); }
 }
 
