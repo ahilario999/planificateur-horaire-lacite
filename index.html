@@ -1764,23 +1764,45 @@ async function openRosterModal(rosterId){
   // ── Charger données Supabase si le prof a un compte ──
   let demandesEnAttente = [];
   let dispoSource = 'local';
-  if(editing && r.user_id && sb){
+  let profPP = null; // données prof_profiles du prof
+  // Fallback : si user_id manquant dans roster, chercher via prof_profiles par email
+  let profUserId = r.user_id || null;
+  if(editing && !profUserId && r.email && sb){
     try {
-      const [{ data: demData }, { data: dispData }] = await Promise.all([
-        sb.from('cours_demandes').select('*').eq('prof_user_id', r.user_id).eq('statut','en_attente').order('created_at',{ascending:false}),
-        sb.from('disponibilites').select('*').eq('prof_user_id', r.user_id).eq('session', sessionActive)
-      ]);
-      demandesEnAttente = demData || [];
-      if(dispData && dispData.length > 0){
+      const { data: pp } = await sb.from('prof_profiles')
+        .select('user_id,telephone,prenom,nom,numero_employe')
+        .ilike('email_cours', r.email).maybeSingle();
+      if(pp){ profUserId = pp.user_id; profPP = pp; }
+    } catch(e){}
+  }
+  if(editing && profUserId && sb){
+    try {
+      const queries = [
+        sb.from('cours_demandes').select('*').eq('prof_user_id', profUserId).eq('statut','en_attente').order('created_at',{ascending:false}),
+        sb.from('disponibilites').select('*').eq('prof_user_id', profUserId).eq('session', sessionActive)
+      ];
+      if(!profPP) queries.push(sb.from('prof_profiles').select('user_id,telephone,prenom,nom,numero_employe').eq('user_id', profUserId).maybeSingle());
+      const results = await Promise.all(queries);
+      demandesEnAttente = results[0].data || [];
+      const dispData = results[1].data || [];
+      if(!profPP && results[2]) profPP = results[2].data;
+      if(dispData.length > 0){
         _dispoTemp = new Set(dispData.filter(d=>d.disponible).map(d=>d.jour+'|'+d.plage));
         dispoSource = 'supabase';
+      }
+      // Si le roster n'avait pas user_id, on l'enregistre pour la prochaine fois
+      if(!r.user_id && profUserId){
+        sb.from('profs_roster').update({ user_id: profUserId }).eq('id', rosterId).then(()=>{
+          const entry = rosterProfs.find(x=>x.id===rosterId);
+          if(entry) entry.user_id = profUserId;
+        });
       }
     } catch(e){ console.warn('[openRosterModal]', e); }
   }
 
   // ── Section demandes en attente (item 8) ──
   let demandesSection = '';
-  if(editing && r.user_id && demandesEnAttente.length > 0){
+  if(editing && profUserId && demandesEnAttente.length > 0){
     demandesSection = '<div class="form-section-title">🚩 Demandes de cours en attente <span class="hint">('+demandesEnAttente.length+')</span></div>'+
       '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">';
     demandesEnAttente.forEach(d=>{
@@ -1793,9 +1815,9 @@ async function openRosterModal(rosterId){
         '</div>'+
         '<div class="admin-demande-actions" style="gap:6px;">'+
         '<button class="btn btn-sm" style="background:rgba(76,175,80,.1);color:#2e7d32;border-color:rgba(76,175,80,.4);" '+
-          'onclick="traiterDemandeModal('+d.id+',\'accepte\',\''+r.user_id+'\',\''+esc(d.numero_cours)+'\','+rosterId+')">✓ Accepter</button>'+
+          'onclick="traiterDemandeModal('+d.id+',\'accepte\',\''+profUserId+'\',\''+esc(d.numero_cours)+'\','+rosterId+')">✓ Accepter</button>'+
         '<button class="btn btn-sm btn-danger" '+
-          'onclick="traiterDemandeModal('+d.id+',\'refuse\',\''+r.user_id+'\',\'\','+rosterId+')">✕ Refuser</button>'+
+          'onclick="traiterDemandeModal('+d.id+',\'refuse\',\''+profUserId+'\',\'\','+rosterId+')">✕ Refuser</button>'+
         '</div></div>';
     });
     demandesSection += '</div>';
@@ -1804,20 +1826,29 @@ async function openRosterModal(rosterId){
   // ── Indicateur source des dispos (item 9) ──
   const dispoHint = dispoSource==='supabase'
     ? ' <span class="hint" style="color:#22c55e;">✓ Entrées par le prof</span>'
-    : (r.user_id
+    : (profUserId
         ? ' <span class="hint">Prof n\'a pas encore entré ses dispos</span>'
         : ' <span class="hint">Admin seulement (pas de compte)</span>');
 
+  // Si le prof a un profil Supabase, on affiche ses propres données (plus récentes)
+  const rTel     = (profPP?.telephone    || r.telephone    || '');
+  const rPrenom  = (profPP?.prenom       || r.prenom       || '');
+  const rNom     = (profPP?.nom          || r.nom          || '');
+  const rEmploye = (profPP?.numero_employe || r.numero_employe || '');
+  const profSyncBadge = profPP
+    ? ' <span class="hint" style="color:#22c55e;font-size:10px;">✓ Données synchronisées depuis le profil du prof</span>'
+    : '';
+
   const body =
     '<div class="form-error" id="formErr"></div>'+
-    '<div class="form-section-title">Informations</div>'+
+    '<div class="form-section-title">Informations'+profSyncBadge+'</div>'+
     '<div class="form-grid">'+
-    '<div class="field"><label>Prénom</label><input id="r-prenom" value="'+esc(r.prenom||'')+'"></div>'+
-    '<div class="field"><label>Nom</label><input id="r-nom" value="'+esc(r.nom||'')+'"></div>'+
+    '<div class="field"><label>Prénom</label><input id="r-prenom" value="'+esc(rPrenom)+'"></div>'+
+    '<div class="field"><label>Nom</label><input id="r-nom" value="'+esc(rNom)+'"></div>'+
     '<div class="field full"><label>Courriel <span class="hint">(doit correspondre au courriel dans les cours de l\'horaire)</span></label>'+
     '<input id="r-email" value="'+esc(r.email||'')+'" placeholder="prenom.nom@exemple.com"></div>'+
-    '<div class="field"><label>Téléphone</label><input id="r-tel" value="'+esc(r.telephone||'')+'" placeholder="613-742-2483"></div>'+
-    '<div class="field"><label>Numéro d\'employé</label><input id="r-employe" value="'+esc(r.numero_employe||'')+'"></div>'+
+    '<div class="field"><label>Téléphone</label><input id="r-tel" value="'+esc(rTel)+'" placeholder="613-742-2483"></div>'+
+    '<div class="field"><label>Numéro d\'employé</label><input id="r-employe" value="'+esc(rEmploye)+'"></div>'+
     '<div class="field"><label>Statut</label>'+
     '<select id="r-statut">'+
     '<option value="contractuel"'+(r.statut==='contractuel'?' selected':'')+'>Contractuel·le</option>'+
@@ -3152,6 +3183,16 @@ async function sauvegarderProfil(){
       .eq('user_id', currentUser.id);
     if(error) throw error;
     profProfil = { ...profProfil, prenom, nom, email_cours, numero_employe, telephone };
+    // Sync vers profs_roster pour que l'admin voie les données à jour
+    try {
+      const { data: rEntry } = await sb.from('profs_roster')
+        .select('id,user_id').ilike('email', email_cours).maybeSingle();
+      if(rEntry){
+        const rPayload = { prenom, nom, telephone, numero_employe, updated_at: new Date().toISOString() };
+        if(!rEntry.user_id) rPayload.user_id = currentUser.id;
+        await sb.from('profs_roster').update(rPayload).eq('id', rEntry.id);
+      }
+    } catch(syncErr){ console.warn('[sauvegarderProfil] sync roster:', syncErr); }
     alert('Profil mis à jour.');
   } catch(e){ alert('Erreur : '+(e.message||e)); }
 }
