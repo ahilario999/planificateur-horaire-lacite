@@ -533,6 +533,9 @@ body.prof-mode .tab[data-view="espace-prof"]{ display:flex !important; }
 .statut-badge.en_attente{ background:rgba(213,160,33,.15); color:#c07a10; border:1px solid rgba(213,160,33,.4); }
 .statut-badge.accepte{ background:rgba(76,175,80,.15); color:#2e7d32; border:1px solid rgba(76,175,80,.4); }
 .statut-badge.refuse{ background:rgba(227,101,91,.15); color:#c0392b; border:1px solid rgba(227,101,91,.4); }
+.statut-perm{ display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(99,102,241,.12);color:#4338ca;border:1px solid rgba(99,102,241,.3); }
+.statut-cont{ display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(213,160,33,.12);color:#c07a10;border:1px solid rgba(213,160,33,.3); }
+.statut-inactif{ display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(150,150,150,.12);color:#888;border:1px solid rgba(150,150,150,.3);margin-left:4px; }
 
 /* Bannière fenêtre de disponibilités */
 .dispo-fenetre-banner{ padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600;
@@ -1669,45 +1672,202 @@ function supprimerProf(profId){
   refreshAll();
 }
 
-/* --- Vue corps professoral --- */
+/* --- Vue corps professoral (depuis profs_roster Supabase) --- */
+async function chargerRoster(){
+  rosterProfs = [];
+  if(!sb) return;
+  try {
+    const { data, error } = await sb.from('profs_roster').select('*').order('nom',{ascending:true});
+    if(error) throw error;
+    rosterProfs = data || [];
+  } catch(e){ console.warn('[chargerRoster]', e); }
+}
+
 function renderProfs(){
   const cont = document.getElementById('profsContainer');
-  const tri = [...PROFS].sort((a,b)=> (a.nom+a.prenom).localeCompare(b.nom+b.prenom,'fr'));
-  let rows = tri.map(p=>{
-    const mail = p.courriel ? '<a class="email-link" href="mailto:'+esc(p.courriel)+'">'+esc(p.courriel)+'</a>' : '<span class="muted">—</span>';
-    const tel = p.telephone ? esc(p.telephone) : '<span class="muted">—</span>';
-    // Icônes de statut (visibles seulement pour admin)
-    const st = profStatuts[(p.courriel||'').toLowerCase()];
-    const flagHtml = (st && st.hasPendingRequest)
-      ? '<span class="prof-status-flag" title="Demande(s) de cours en attente">🚩</span>'
-      : '';
-    const calHtml = st
+
+  // Bouton de migration si roster vide mais PROFS locaux existent
+  const profsUniques = [...new Map(PROFS.map(p=>[( p.courriel||p.prenom+'_'+p.nom).toLowerCase(), p])).values()];
+  const syncNeeded = profsUniques.filter(p=>
+    p.courriel && !rosterProfs.some(r=> r.email.toLowerCase()===(p.courriel||'').toLowerCase())
+  ).length;
+
+  const tri = [...rosterProfs].sort((a,b)=> (a.nom+a.prenom).localeCompare(b.nom+b.prenom,'fr'));
+
+  let rows = tri.map(r=>{
+    const email = (r.email||'').toLowerCase();
+    const st = profStatuts[email] || {};
+    const flagHtml = st.hasPendingRequest
+      ? '<span class="prof-status-flag" title="Demande(s) de cours en attente">🚩</span>' : '';
+    const calHtml = r.user_id
       ? (st.hasDispo
         ? '<i data-lucide="calendar-check" class="prof-icon-cal green" title="Disponibilités entrées"></i>'
         : '<i data-lucide="calendar-x" class="prof-icon-cal grey" title="Aucune disponibilité entrée"></i>')
-      : '';
-    return '<tr>'+
-      '<td>'+esc(p.prenom||'')+'</td>'+
-      '<td>'+esc(p.nom||'')+'</td>'+
-      '<td>'+mail+'</td>'+
-      '<td>'+tel+'</td>'+
-      '<td>'+nbCoursProf(p.id)+'</td>'+
+      : '<i data-lucide="user-x" class="prof-icon-cal grey" title="Pas de compte de connexion"></i>';
+    const statutBadge = r.statut==='temps_plein'
+      ? '<span class="statut-perm">Temps plein</span>'
+      : '<span class="statut-cont">Contractuel·le</span>';
+    const inactifBadge = r.actif ? '' : '<span class="statut-inactif">Inactif</span>';
+    const profLocal = PROFS.find(p=> p.courriel && r.email && p.courriel.toLowerCase()===r.email.toLowerCase());
+    const nb = profLocal ? nbCoursProf(profLocal.id) : 0;
+    return '<tr'+(r.actif?'':' style="opacity:.55;"')+'>'+
+      '<td>'+esc(r.prenom||'')+'</td>'+
+      '<td>'+esc(r.nom||'')+'</td>'+
+      '<td>'+(r.email?'<a class="email-link" href="mailto:'+esc(r.email)+'">'+esc(r.email)+'</a>':'<span class="muted">—</span>')+'</td>'+
+      '<td>'+(r.telephone?esc(r.telephone):'<span class="muted">—</span>')+'</td>'+
+      '<td>'+(nb||'<span class="muted">—</span>')+'</td>'+
+      '<td>'+statutBadge+inactifBadge+'</td>'+
       '<td class="td-actions">'+flagHtml+calHtml+
-      '<button class="icon-btn" data-admin-only title="Modifier" data-pedit="'+p.id+'">✎</button>'+
-      '<button class="icon-btn icon-btn-danger" data-admin-only title="Supprimer" data-pdel="'+p.id+'">🗑</button></td></tr>';
+      '<button class="icon-btn" data-admin-only title="Modifier" data-redit="'+r.id+'">✎</button>'+
+      '<button class="icon-btn icon-btn-danger" data-admin-only title="Supprimer" data-rdel="'+r.id+'">🗑</button>'+
+      '</td></tr>';
   }).join('');
-  if(!rows) rows = '<tr><td colspan="6" class="muted" style="text-align:center;padding:24px;">Aucun prof. Cliquez « Ajouter un prof ».</td></tr>';
+
+  if(!rows) rows = '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px;">Répertoire vide — cliquez « Ajouter un prof ».</td></tr>';
+
+  const syncBtn = syncNeeded > 0
+    ? '<button class="btn btn-sm btn-ghost" onclick="migrerVersRoster()" title="Importer les profs de l\'horaire non encore dans le répertoire">⬆ Sync horaire ('+syncNeeded+')</button>'
+    : '';
+
   cont.innerHTML =
-    '<div class="table-container"><div style="overflow-x:auto"><table class="data-table">'+
-    '<thead><tr><th class="th-actions" style="text-align:left">Prénom</th>'+
-    '<th class="th-actions" style="text-align:left">Nom</th>'+
-    '<th class="th-actions" style="text-align:left">Courriel</th>'+
-    '<th class="th-actions" style="text-align:left">Numéro du prof</th>'+
-    '<th class="th-actions" style="text-align:left">Cours</th>'+
-    '<th class="th-actions">Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
-  cont.querySelectorAll('[data-pedit]').forEach(b=> b.onclick = ()=> openProfModal(+b.dataset.pedit));
-  cont.querySelectorAll('[data-pdel]').forEach(b=> b.onclick = ()=> supprimerProf(+b.dataset.pdel));
+    '<div class="table-container">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'+
+    '<span style="font-size:13px;color:var(--text-secondary);">'+rosterProfs.length+' prof'+(rosterProfs.length!==1?'s':'')+'</span>'+
+    syncBtn+'</div>'+
+    '<div style="overflow-x:auto"><table class="data-table">'+
+    '<thead><tr>'+
+    '<th style="text-align:left">Prénom</th>'+
+    '<th style="text-align:left">Nom</th>'+
+    '<th style="text-align:left">Courriel</th>'+
+    '<th style="text-align:left">Téléphone</th>'+
+    '<th style="text-align:left">Cours</th>'+
+    '<th style="text-align:left">Statut</th>'+
+    '<th class="th-actions">Actions</th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+
+  cont.querySelectorAll('[data-redit]').forEach(b=> b.onclick = ()=> openRosterModal(+b.dataset.redit));
+  cont.querySelectorAll('[data-rdel]').forEach(b=> b.onclick = ()=> supprimerRosterEntry(+b.dataset.rdel));
   if(window.lucide) lucide.createIcons();
+}
+
+/* --- Modal ajout / modification roster --- */
+function openRosterModal(rosterId){
+  const editing = rosterId != null;
+  const r = editing ? rosterProfs.find(x=>x.id===rosterId) : { prenom:'', nom:'', email:'', telephone:'', numero_employe:'', statut:'contractuel', actif:true, notes:'' };
+  if(editing && !r) return;
+  const body =
+    '<div class="form-error" id="formErr"></div>'+
+    '<div class="form-grid">'+
+    '<div class="field"><label>Prénom</label><input id="r-prenom" value="'+esc(r.prenom||'')+'"></div>'+
+    '<div class="field"><label>Nom</label><input id="r-nom" value="'+esc(r.nom||'')+'"></div>'+
+    '<div class="field full"><label>Courriel <span class="hint">(doit correspondre au courriel dans les cours de l\'horaire)</span></label>'+
+    '<input id="r-email" value="'+esc(r.email||'')+'" placeholder="prenom.nom@exemple.com"></div>'+
+    '<div class="field"><label>Téléphone</label><input id="r-tel" value="'+esc(r.telephone||'')+'" placeholder="613-742-2483"></div>'+
+    '<div class="field"><label>Numéro d\'employé</label><input id="r-employe" value="'+esc(r.numero_employe||'')+'"></div>'+
+    '<div class="field"><label>Statut</label>'+
+    '<select id="r-statut">'+
+    '<option value="contractuel"'+(r.statut==='contractuel'?' selected':'')+'>Contractuel·le</option>'+
+    '<option value="temps_plein"'+(r.statut==='temps_plein'?' selected':'')+'>Temps plein</option>'+
+    '</select></div>'+
+    '<div class="field"><label>Actif</label>'+
+    '<select id="r-actif">'+
+    '<option value="true"'+(r.actif?' selected':'')+'>Actif</option>'+
+    '<option value="false"'+(!r.actif?' selected':'')+'>Inactif (ne sera pas contacté)</option>'+
+    '</select></div>'+
+    '<div class="field full"><label>Notes <span class="hint">(internes, non visibles par le prof)</span></label>'+
+    '<textarea id="r-notes" rows="2" style="width:100%;resize:vertical;">'+esc(r.notes||'')+'</textarea></div>'+
+    '</div>';
+  const foot =
+    (editing ? '<button class="btn btn-danger foot-left" onclick="supprimerRosterEntry('+rosterId+')">Supprimer</button>' : '')+
+    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>'+
+    '<button class="btn btn-primary" onclick="enregistrerRosterEntry('+(editing?rosterId:'null')+')">Enregistrer</button>';
+  openModal(editing ? 'Modifier le prof' : 'Ajouter un prof', body, foot);
+}
+
+async function enregistrerRosterEntry(rosterId){
+  const prenom        = document.getElementById('r-prenom')?.value.trim() || '';
+  const nom           = document.getElementById('r-nom')?.value.trim() || '';
+  const email         = document.getElementById('r-email')?.value.trim() || '';
+  const telephone     = document.getElementById('r-tel')?.value.trim() || '';
+  const numero_employe= document.getElementById('r-employe')?.value.trim() || '';
+  const statut        = document.getElementById('r-statut')?.value || 'contractuel';
+  const actif         = document.getElementById('r-actif')?.value === 'true';
+  const notes         = document.getElementById('r-notes')?.value.trim() || '';
+
+  if(!prenom && !nom){ const e=document.getElementById('formErr'); e.textContent='Indiquez au moins un prénom ou un nom.'; e.classList.add('show'); return; }
+  if(!email){ const e=document.getElementById('formErr'); e.textContent='Le courriel est obligatoire.'; e.classList.add('show'); return; }
+
+  const payload = { prenom, nom, email, telephone, numero_employe, statut, actif, notes, updated_at: new Date().toISOString() };
+
+  try {
+    if(rosterId != null){
+      const { error } = await sb.from('profs_roster').update(payload).eq('id', rosterId);
+      if(error) throw error;
+    } else {
+      const { error } = await sb.from('profs_roster').insert(payload);
+      if(error) throw error;
+    }
+    // Sync avec PROFS local pour l'horaire
+    const profLocal = PROFS.find(p=> p.courriel && p.courriel.toLowerCase()===email.toLowerCase());
+    if(profLocal){ Object.assign(profLocal, { prenom, nom, telephone }); }
+    else if(rosterId==null){ PROFS.push({ id: nextProfId(), prenom, nom, courriel: email, telephone, statut: statut==='temps_plein'?'permanent':'contractuel', dispos:[], qualifications:[] }); }
+    closeModal();
+    await chargerRoster();
+    renderProfs();
+    sauvegarder();
+  } catch(e){
+    const err=document.getElementById('formErr');
+    err.textContent='Erreur : '+(e.message||e); err.classList.add('show');
+  }
+}
+
+async function supprimerRosterEntry(rosterId){
+  const r = rosterProfs.find(x=>x.id===rosterId); if(!r) return;
+  const profLocal = PROFS.find(p=> p.courriel && r.email && p.courriel.toLowerCase()===r.email.toLowerCase());
+  const nb = profLocal ? nbCoursProf(profLocal.id) : 0;
+  const msg = nb
+    ? 'Supprimer '+(r.prenom+' '+r.nom).trim()+' du répertoire ? Ce prof a '+nb+' cours dans l\'horaire (ils seront marqués « À confirmer »).'
+    : 'Supprimer '+(r.prenom+' '+r.nom).trim()+' du répertoire ?';
+  if(!confirm(msg)) return;
+  try {
+    const { error } = await sb.from('profs_roster').delete().eq('id', rosterId);
+    if(error) throw error;
+    // Sync local
+    if(profLocal){
+      COURS.forEach(c=>{ if(c.profId===profLocal.id) c.profId=null; });
+      PROFS.splice(PROFS.findIndex(x=>x.id===profLocal.id), 1);
+    }
+    closeModal();
+    await chargerRoster();
+    renderProfs();
+    sauvegarder();
+  } catch(e){ alert('Erreur : '+(e.message||e)); }
+}
+
+/* --- Migration one-time : importe profs de COURS_BRUTS vers roster --- */
+async function migrerVersRoster(){
+  const uniques = [...new Map(PROFS.filter(p=>p.courriel&&p.courriel!=='À confirmer')
+    .map(p=>[ p.courriel.toLowerCase(), p ])).values()];
+  const nouveaux = uniques.filter(p=>
+    !rosterProfs.some(r=> r.email.toLowerCase()===p.courriel.toLowerCase())
+  );
+  if(nouveaux.length===0){ alert('Tous les profs de l\'horaire sont déjà dans le répertoire.'); return; }
+  if(!confirm('Importer '+nouveaux.length+' prof(s) depuis l\'horaire vers le répertoire ?')) return;
+  const inserts = nouveaux.map(p=>({
+    email: p.courriel,
+    prenom: p.prenom || '',
+    nom: p.nom || '',
+    telephone: p.telephone || '',
+    statut: (p.statut==='permanent'||PROFS_PERMANENTS.includes((p.prenom+' '+p.nom).trim())) ? 'temps_plein' : 'contractuel',
+    actif: true
+  }));
+  try {
+    const { error } = await sb.from('profs_roster').insert(inserts);
+    if(error) throw error;
+    await chargerRoster();
+    renderProfs();
+    alert(nouveaux.length+' prof(s) importé(s) avec succès.');
+  } catch(e){ alert('Erreur migration : '+(e.message||e)); }
 }
 
 /* ============================================================
@@ -2489,8 +2649,8 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 // Changement de session (Automne / Hiver)
 document.getElementById('sessionSelect').onchange = e=> switchSession(e.target.value);
 
-// Ajouter un prof
-document.getElementById('addProfBtn').onclick = ()=> openProfModal(null);
+// Ajouter un prof (roster Supabase)
+document.getElementById('addProfBtn').onclick = ()=> openRosterModal(null);
 
 // Génération automatique de l'horaire
 document.getElementById('btnGenerer').onclick = openGenererModal;
@@ -2751,7 +2911,8 @@ document.getElementById('btnReset').onclick = reinitialiser;
 
 let profProfil    = null;  // données prof_profiles de l'utilisateur courant
 let dispoSettings = null;  // paramètres de la fenêtre de dispos
-let profStatuts   = {};    // statuts admin : { [email_cours_lower]: { hasPendingRequest, hasDispo } }
+let profStatuts   = {};    // statuts admin : { [email_lower]: { hasPendingRequest, hasDispo } }
+let rosterProfs   = [];    // liste maître depuis profs_roster (Supabase)
 let _dispoSaveTimer = null;
 
 async function chargerProfProfil(){
@@ -3023,18 +3184,18 @@ async function chargerStatutsProfs(){
   profStatuts = {};
   if(!sb || !currentUser) return;
   try {
-    const [{ data: profiles }, { data: demandes }, { data: dispos }] = await Promise.all([
-      sb.from('prof_profiles').select('user_id, email_cours'),
+    const [{ data: demandes }, { data: dispos }] = await Promise.all([
       sb.from('cours_demandes').select('prof_user_id').eq('statut','en_attente'),
       sb.from('disponibilites').select('prof_user_id')
     ]);
     const userIdsAvecDemande = new Set((demandes||[]).map(d=>d.prof_user_id));
     const userIdsAvecDispo   = new Set((dispos||[]).map(d=>d.prof_user_id));
-    (profiles||[]).forEach(p=>{
-      if(!p.email_cours) return;
-      profStatuts[p.email_cours.toLowerCase()] = {
-        hasPendingRequest: userIdsAvecDemande.has(p.user_id),
-        hasDispo: userIdsAvecDispo.has(p.user_id)
+    // Utilise rosterProfs (déjà chargé) pour le mapping email → user_id
+    (rosterProfs||[]).forEach(r=>{
+      if(!r.email) return;
+      profStatuts[r.email.toLowerCase()] = {
+        hasPendingRequest: r.user_id && userIdsAvecDemande.has(r.user_id),
+        hasDispo: r.user_id && userIdsAvecDispo.has(r.user_id)
       };
     });
   } catch(e){ console.warn('[chargerStatutsProfs]', e); }
@@ -3042,8 +3203,8 @@ async function chargerStatutsProfs(){
 
 async function chargerAdminSection(){
   await chargerDispoSettings();
-  await chargerStatutsProfs();
-  renderProfs(); // Rafraîchit avec les icônes de statut
+  await Promise.all([chargerRoster(), chargerStatutsProfs()]);
+  renderProfs();
   await renderAdminDemandes();
   renderDispoSettingsAdmin();
 }
@@ -3208,7 +3369,7 @@ document.getElementById('loginPassword').addEventListener('keydown', e=>{
 /* --- Déconnexion --- */
 document.getElementById('logoutBtn').addEventListener('click', async ()=>{
   await sb.auth.signOut();
-  currentUser = null; userRole = 'viewer'; profProfil = null; dispoSettings = null; profStatuts = {};
+  currentUser = null; userRole = 'viewer'; profProfil = null; dispoSettings = null; profStatuts = {}; rosterProfs = [];
   document.body.classList.remove('viewer-mode', 'prof-mode');
   document.getElementById('loginOverlay').classList.remove('hidden');
 });
