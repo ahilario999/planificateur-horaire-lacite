@@ -641,9 +641,11 @@ let userRole    = 'viewer'; // 'admin' | 'viewer'
 
 async function getUserRole(userId){
   try{
-    const { data } = await sb.from('user_roles').select('role').eq('user_id', userId).single();
+    const { data, error } = await sb.from('user_roles').select('role').eq('user_id', userId).single();
+    console.log('[getUserRole] userId:', userId, '| data:', data, '| error:', error);
+    if(error){ console.warn('[getUserRole] Erreur Supabase:', error.message, error.code); return 'viewer'; }
     return data?.role || 'viewer';
-  }catch(e){ return 'viewer'; }
+  }catch(e){ console.error('[getUserRole] Exception:', e); return 'viewer'; }
 }
 
 function applyRoleUI(){
