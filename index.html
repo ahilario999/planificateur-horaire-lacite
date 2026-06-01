@@ -3063,68 +3063,87 @@ let rosterProfs   = [];    // liste maître depuis profs_roster (Supabase)
 let _dispoSaveTimer = null;
 
 async function chargerProfProfil(){
-  window._profRosterLinked = false; // sera mis à true si le compte est lié au roster
+  window._profRosterLinked = false;
   try {
+    const loginEmail = currentUser.email || '';
+
     // 1. Chercher le profil existant
-    const { data, error } = await sb.from('prof_profiles')
+    const { data } = await sb.from('prof_profiles')
       .select('*').eq('user_id', currentUser.id).maybeSingle();
 
     if(data){
       profProfil = data;
-      // Auto-lier au roster via email_cours OU via email de connexion
-      const emailsToTry = [...new Set([
-        profProfil.email_cours, currentUser.email
-      ].filter(Boolean))];
+      // Tenter de lier via email_cours OU email de connexion
+      const emailsToTry = [...new Set([profProfil.email_cours, loginEmail].filter(Boolean))];
       for(const tryEmail of emailsToTry){
         const { data: rEntry } = await sb.from('profs_roster')
           .select('id, user_id, email').ilike('email', tryEmail).maybeSingle();
         if(rEntry){
           window._profRosterLinked = true;
-          if(!rEntry.user_id){
+          if(!rEntry.user_id)
             await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
-          }
-          // Si email_cours ne pointait pas vers le bon courriel institutionnel, corriger
-          if(profProfil.email_cours.toLowerCase() !== rEntry.email.toLowerCase()){
-            await sb.from('prof_profiles')
-              .update({ email_cours: rEntry.email }).eq('user_id', currentUser.id);
+          // Corriger email_cours si besoin
+          if(profProfil.email_cours?.toLowerCase() !== rEntry.email.toLowerCase()){
+            await sb.from('prof_profiles').update({ email_cours: rEntry.email }).eq('user_id', currentUser.id);
             profProfil.email_cours = rEntry.email;
           }
           break;
         }
       }
+      // Profil existant mais aucune entrée roster → créer automatiquement
+      if(!window._profRosterLinked){
+        const rosterEmail = profProfil.email_cours || loginEmail;
+        const { error: rInsertErr } = await sb.from('profs_roster').insert({
+          prenom:   profProfil.prenom || '',
+          nom:      profProfil.nom || '',
+          email:    rosterEmail,
+          user_id:  currentUser.id,
+          statut:   profProfil.statut || 'contractuel',
+          actif:    true,
+          notes:    'Ajouté automatiquement à la connexion'
+        });
+        if(!rInsertErr) window._profRosterLinked = true;
+        else console.warn('[chargerProfProfil] roster insert:', rInsertErr.message);
+      }
       return;
     }
 
-    // 2. Pas de profil — chercher dans profs_roster par email de connexion ou variantes
-    const loginEmail = currentUser.email || '';
+    // 2. Pas de profil → chercher dans roster par email de connexion
     const { data: rEntry } = await sb.from('profs_roster')
       .select('*').ilike('email', loginEmail).maybeSingle();
 
     const newProfile = {
-      user_id:         currentUser.id,
-      prenom:          rEntry?.prenom          || '',
-      nom:             rEntry?.nom             || '',
-      email_cours:     rEntry?.email           || loginEmail,
-      statut:          rEntry?.statut          || 'contractuel',
-      numero_employe:  rEntry?.numero_employe  || '',
-      telephone:       rEntry?.telephone       || ''
+      user_id:        currentUser.id,
+      prenom:         rEntry?.prenom         || '',
+      nom:            rEntry?.nom            || '',
+      email_cours:    rEntry?.email          || loginEmail,
+      statut:         rEntry?.statut         || 'contractuel',
+      numero_employe: rEntry?.numero_employe || '',
+      telephone:      rEntry?.telephone      || ''
     };
 
-    // 3. Créer le profil automatiquement (requiert RLS INSERT own)
     const { data: created, error: createErr } = await sb.from('prof_profiles')
       .insert(newProfile).select().single();
-
-    if(createErr){
-      console.warn('[chargerProfProfil] INSERT échoué :', createErr.message);
-      profProfil = null;
-      return;
-    }
+    if(createErr){ console.warn('[chargerProfProfil] INSERT:', createErr.message); profProfil = null; return; }
     profProfil = created;
 
-    // 4. Lier le user_id dans profs_roster si pas encore fait
-    if(rEntry && !rEntry.user_id){
-      await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
+    if(rEntry){
+      // Lier le roster existant
+      if(!rEntry.user_id)
+        await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
       window._profRosterLinked = true;
+    } else {
+      // Aucune entrée roster → créer automatiquement
+      const { error: rInsertErr } = await sb.from('profs_roster').insert({
+        prenom:  newProfile.prenom,
+        nom:     newProfile.nom,
+        email:   loginEmail,
+        user_id: currentUser.id,
+        statut:  'contractuel',
+        actif:   true,
+        notes:   'Ajouté automatiquement à la connexion'
+      });
+      if(!rInsertErr) window._profRosterLinked = true;
     }
 
   } catch(e){
