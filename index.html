@@ -1943,16 +1943,23 @@ async function enregistrerRosterEntry(rosterId){
     // Sync dispos vers Supabase si le prof a un compte (admin peut modifier les dispos)
     const rosterEntry = rosterId != null ? rosterProfs.find(x=>x.id===rosterId) : null;
     if(rosterEntry?.user_id && sb){
-      try {
-        for(const j of JOURS){
-          for(const [code] of PERIODES){
-            await sb.from('disponibilites').upsert({
-              prof_user_id: rosterEntry.user_id, session: sessionActive,
-              jour: j, plage: code, disponible: _dispoTemp.has(j+'|'+code)
-            }, { onConflict:'prof_user_id,session,jour,plage' });
-          }
+      const rows = [];
+      for(const j of JOURS){
+        for(const [code] of PERIODES){
+          rows.push({ prof_user_id: rosterEntry.user_id, session: sessionActive,
+            jour: j, plage: code, disponible: _dispoTemp.has(j+'|'+code) });
         }
-      } catch(e){ console.warn('[enregistrerRosterEntry] dispo sync:', e); }
+      }
+      const { error: dispoErr } = await sb.from('disponibilites')
+        .upsert(rows, { onConflict:'prof_user_id,session,jour,plage' });
+      if(dispoErr){
+        const err = document.getElementById('formErr');
+        err.textContent = 'Profil sauvegardé mais erreur sync dispos : '+dispoErr.message;
+        err.classList.add('show');
+        // Ne pas fermer le modal — laisser l'admin voir l'erreur
+        await chargerRoster(); renderProfs(); sauvegarder();
+        return;
+      }
     }
     closeModal();
     await chargerRoster();
