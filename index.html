@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Planificateur d'horaire — Design graphique (La Cité)</title>
+<title>Planificateur Horaire — Design graphique (La Cité)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 
@@ -258,10 +257,6 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
 .icon-btn:hover{ border-color:var(--primary); color:var(--primary); background:var(--bg); }
 .icon-btn-danger:hover{ border-color:var(--loc-comodal); color:var(--loc-comodal); }
 .icon-btn-lock{ border-color:var(--loc-enligne); color:var(--loc-enligne); background:rgba(213,160,33,.1); }
-.prof-icon-cal{ width:15px; height:15px; vertical-align:middle; margin:0 3px; cursor:default; }
-.prof-icon-cal.green{ color:#22c55e; }
-.prof-icon-cal.grey{ color:#bbb; }
-.prof-status-flag{ font-size:14px; margin:0 2px; cursor:default; vertical-align:middle; }
 
 /* Modale */
 .modal-overlay{ position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.5); backdrop-filter:blur(3px);
@@ -280,7 +275,6 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
 
 /* Formulaire */
 .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.form-section-title{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-light); margin:20px 0 10px; border-bottom:1px solid var(--border); padding-bottom:6px; }
 .field{ display:flex; flex-direction:column; gap:6px; }
 .field.full{ grid-column:1 / -1; }
 .field label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text-light); }
@@ -472,154 +466,10 @@ tr.conflit-row td:first-child::before{ content:'⚠ '; color:#e3655b; font-weigh
   .header{ flex-direction:column; }
   .container{ padding:24px 14px; }
 }
-
-/* =========  AUTH OVERLAY  ========= */
-#loginOverlay{
-  position:fixed; inset:0; z-index:9999;
-  background:var(--bg); display:flex; align-items:center; justify-content:center; padding:20px;
-}
-#loginOverlay.hidden{ display:none; }
-.login-card{
-  background:var(--card-bg); border:1px solid var(--border); border-radius:20px;
-  box-shadow:var(--shadow-lg); padding:40px; width:100%; max-width:380px;
-  display:flex; flex-direction:column; gap:18px;
-}
-.login-card h2{ font-size:22px; font-weight:700; margin:0; text-align:center; }
-.login-card p{ font-size:13px; color:var(--text-secondary); text-align:center; margin:0; }
-.login-err{ font-size:13px; text-align:center; display:none; line-height:1.4; }
-.login-err.show{ display:block; }
-/* Masquage des éléments admin pour les lecteurs */
-.viewer-mode [data-admin-only]{ display:none !important; }
-/* Barre auth (rôle + déconnexion) */
-.auth-bar{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
-.auth-bar-top{ display:flex; align-items:center; gap:8px; }
-.role-badge{
-  display:inline-flex; align-items:center; gap:6px; padding:5px 12px;
-  border-radius:50px; font-size:12px; font-weight:600;
-  background:var(--card-bg); border:1px solid var(--border);
-}
-.role-badge.admin{ border-color:var(--primary); color:var(--primary); }
-.role-badge.viewer{ border-color:var(--loc-enligne); color:#d5a021; }
-.role-badge.prof{ border-color:#7c6fcd; color:#5a4fbf; }
-
-/* ---- RÔLE PROF ---- */
-/* En mode prof : cacher admin-only, onglet corps-prof ; montrer espace-prof */
-body.prof-mode [data-admin-only]{ display:none !important; }
-body.prof-mode .tab[data-view="profs"]{ display:none !important; }
-body.prof-mode .tab[data-view="espace-prof"]{ display:flex !important; }
-.tab[data-view="espace-prof"]{ display:none; } /* caché par défaut */
-
-/* Badge de notification sur les onglets */
-.tab-notif{ display:inline-flex; align-items:center; justify-content:center;
-  background:var(--loc-comodal); color:#fff; font-size:10px; font-weight:700;
-  border-radius:50px; min-width:18px; height:18px; padding:0 5px;
-  margin-left:6px; line-height:1; }
-
-/* Espace prof */
-.espace-prof{ display:flex; flex-direction:column; gap:20px; }
-.ep-section{ background:var(--card-bg); border:1px solid var(--border); border-radius:16px;
-  padding:20px 24px; box-shadow:var(--shadow-sm); }
-.ep-section-title{ font-size:13px; font-weight:700; text-transform:uppercase;
-  letter-spacing:.06em; color:var(--text-secondary); margin-bottom:16px;
-  display:flex; align-items:center; gap:8px; }
-.ep-profil-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-.ep-profil-field{ display:flex; flex-direction:column; gap:3px; }
-.ep-profil-label{ font-size:11px; font-weight:600; text-transform:uppercase;
-  letter-spacing:.05em; color:var(--text-light); }
-.ep-profil-value{ font-size:15px; font-weight:600; color:var(--text-primary); }
-
-/* Statut badges */
-.statut-badge{ display:inline-flex; align-items:center; padding:3px 10px;
-  border-radius:50px; font-size:11px; font-weight:700; white-space:nowrap; }
-.statut-badge.en_attente{ background:rgba(213,160,33,.15); color:#c07a10; border:1px solid rgba(213,160,33,.4); }
-.statut-badge.accepte{ background:rgba(76,175,80,.15); color:#2e7d32; border:1px solid rgba(76,175,80,.4); }
-.statut-badge.refuse{ background:rgba(227,101,91,.15); color:#c0392b; border:1px solid rgba(227,101,91,.4); }
-.statut-perm{ display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(99,102,241,.12);color:#4338ca;border:1px solid rgba(99,102,241,.3); }
-.statut-cont{ display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(213,160,33,.12);color:#c07a10;border:1px solid rgba(213,160,33,.3); }
-.statut-inactif{ display:inline-flex;align-items:center;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(150,150,150,.12);color:#888;border:1px solid rgba(150,150,150,.3);margin-left:4px; }
-
-/* Bannière fenêtre de disponibilités */
-.dispo-fenetre-banner{ padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600;
-  display:flex; align-items:center; gap:10px; margin-bottom:16px; }
-.dispo-fenetre-banner.ouverte{ background:rgba(76,175,80,.12); border:1px solid rgba(76,175,80,.4); color:#2e7d32; }
-.dispo-fenetre-banner.fermee{ background:rgba(227,101,91,.08); border:1px solid rgba(227,101,91,.3); color:#c0392b; }
-
-/* Notes par jour dans la grille dispos */
-.dispo-day-notes{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:10px; }
-.dispo-note-field{ display:flex; flex-direction:column; gap:4px; }
-.dispo-note-field label{ font-size:10px; font-weight:600; text-transform:uppercase;
-  letter-spacing:.04em; color:var(--text-secondary); }
-.dispo-note-field textarea{ resize:none; padding:7px 10px; border:1px solid var(--border);
-  border-radius:8px; background:var(--bg); font-family:inherit; font-size:12px;
-  color:var(--text-primary); width:100%; }
-.dispo-note-field textarea:focus{ outline:none; border-color:var(--primary); }
-.dispo-note-field textarea:disabled{ opacity:.5; cursor:not-allowed; }
-.dispo-autosave{ font-size:12px; color:var(--text-light); margin-top:8px;
-  display:flex; align-items:center; gap:6px; min-height:20px; }
-.dispo-cell.dispo-locked{ cursor:not-allowed; opacity:.6; }
-
-/* Demandes de cours — vue prof */
-.demandes-list{ display:flex; flex-direction:column; gap:8px; }
-.demande-item{ display:flex; align-items:center; justify-content:space-between;
-  gap:12px; padding:10px 14px; background:var(--bg);
-  border:1px solid var(--border); border-radius:11px; flex-wrap:wrap; }
-.demande-info{ display:flex; flex-direction:column; gap:2px; min-width:0; }
-.demande-nom{ font-size:14px; font-weight:600; }
-.demande-meta{ font-size:12px; color:var(--text-secondary); }
-.demande-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
-.demande-add-row{ display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;
-  margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
-.demande-add-row .field{ flex:1 1 180px; margin:0; }
-
-/* Cours prof surligné dans la grille */
-.course-block.prof-own{ outline:3px solid #f5c842; outline-offset:-2px;
-  box-shadow:0 0 0 3px rgba(245,200,66,.45), 0 4px 12px rgba(0,0,0,.2); }
-
-/* Admin — section demandes et paramètres */
-.admin-section-title{ font-size:13px; font-weight:700; text-transform:uppercase;
-  letter-spacing:.06em; color:var(--text-secondary); margin:24px 0 12px;
-  display:flex; align-items:center; gap:10px; }
-.admin-demande-item{ display:flex; align-items:center; gap:12px; padding:10px 14px;
-  background:var(--bg); border:1px solid var(--border); border-radius:11px;
-  margin-bottom:8px; flex-wrap:wrap; }
-.admin-demande-info{ flex:1; min-width:0; }
-.admin-demande-prof{ font-size:13px; font-weight:700; }
-.admin-demande-cours{ font-size:13px; color:var(--text-primary); }
-.admin-demande-meta{ font-size:11px; color:var(--text-secondary); margin-top:2px; }
-.admin-demande-actions{ display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; }
-.admin-empty{ font-size:13px; color:var(--text-light); font-style:italic; padding:8px 0; }
-
-/* Paramètres fenêtre dispos (admin) */
-.dispo-settings-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.dispo-settings-card{ background:var(--bg); border:1px solid var(--border); border-radius:12px;
-  padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
-.dispo-settings-session{ font-size:15px; font-weight:700; }
-.dispo-settings-status{ font-size:12px; padding:3px 10px; border-radius:50px; font-weight:600; }
-.dispo-settings-status.open{ background:rgba(76,175,80,.15); color:#2e7d32; }
-.dispo-settings-status.closed{ background:rgba(227,101,91,.1); color:#c0392b; }
-
 </style>
 </head>
 <body>
 <canvas id="gridCanvas"></canvas>
-
-<!-- Écran de connexion -->
-<div id="loginOverlay">
-  <div class="login-card">
-    <h2>Planificateur d'horaire</h2>
-    <p>Design graphique — La Cité Collégiale</p>
-    <div class="login-err" id="loginErr"></div>
-    <div class="field">
-      <label>Courriel</label>
-      <input type="email" id="loginEmail" placeholder="prenom.nom@lacitec.on.ca" autocomplete="email">
-    </div>
-    <div class="field">
-      <label>Mot de passe</label>
-      <input type="password" id="loginPassword" autocomplete="current-password">
-    </div>
-    <button class="btn btn-primary" id="loginBtn" style="width:100%;display:flex;justify-content:center;">Se connecter</button>
-  </div>
-</div>
 <div class="container">
 
   <div class="header">
@@ -627,16 +477,10 @@ body.prof-mode .tab[data-view="espace-prof"]{ display:flex !important; }
       <h1>Planificateur d'horaire</h1>
       <p>Design graphique 61508 — La Cité · <span id="sessionLabel">Automne 2026</span></p>
     </div>
-    <div class="auth-bar">
-      <div class="auth-bar-top">
-        <span id="roleBadge" class="role-badge">…</span>
-        <button class="btn btn-sm" id="logoutBtn">Déconnexion</button>
-      </div>
-      <div class="theme-toggle" id="themeToggle">
-        <span class="theme-toggle-icon" id="themeIcon">🌙</span>
-        <span class="theme-toggle-label" id="themeLabel">Mode sombre</span>
-        <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
-      </div>
+    <div class="theme-toggle" id="themeToggle">
+      <span class="theme-toggle-icon" id="themeIcon">🌙</span>
+      <span class="theme-toggle-label" id="themeLabel">Mode sombre</span>
+      <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
     </div>
   </div>
 
@@ -651,13 +495,13 @@ body.prof-mode .tab[data-view="espace-prof"]{ display:flex !important; }
     <div class="control-group">
       <label>Automatisation</label>
       <div class="data-actions">
-        <button class="btn btn-sm btn-primary" id="btnGenerer" data-admin-only title="Générer automatiquement jour, heure et local">⚡ Générer l'horaire</button>
+        <button class="btn btn-sm btn-primary" id="btnGenerer" title="Générer automatiquement jour, heure et local">⚡ Générer l'horaire</button>
       </div>
     </div>
     <div class="control-group">
       <label>Versions</label>
       <div class="data-actions">
-        <button class="btn btn-sm btn-primary" id="btnSaveVersion" data-admin-only title="Enregistrer une copie datée de l'horaire actuel">💾 Sauvegarder une version</button>
+        <button class="btn btn-sm btn-primary" id="btnSaveVersion" title="Enregistrer une copie datée de l'horaire actuel">💾 Sauvegarder une version</button>
         <button class="btn btn-sm" id="btnVersions" title="Voir l'historique et revenir à une version">🕘 Historique</button>
       </div>
     </div>
@@ -672,8 +516,8 @@ body.prof-mode .tab[data-view="espace-prof"]{ display:flex !important; }
       <label>Données</label>
       <div class="data-actions">
         <button class="btn btn-sm" id="btnExport" title="Télécharger une copie de sauvegarde (.json)">⬇ Exporter</button>
-        <button class="btn btn-sm" id="btnImport" data-admin-only title="Charger un fichier de sauvegarde (.json)">⬆ Importer</button>
-        <button class="btn btn-sm btn-ghost" id="btnReset" data-admin-only title="Revenir aux données A2026 d'origine">↺ Réinitialiser</button>
+        <button class="btn btn-sm" id="btnImport" title="Charger un fichier de sauvegarde (.json)">⬆ Importer</button>
+        <button class="btn btn-sm btn-ghost" id="btnReset" title="Revenir aux données A2026 d'origine">↺ Réinitialiser</button>
         <input type="file" id="fileImport" accept="application/json,.json" style="display:none">
       </div>
     </div>
@@ -690,7 +534,6 @@ body.prof-mode .tab[data-view="espace-prof"]{ display:flex !important; }
     <button class="tab active" data-view="grille">Grille d'horaire</button>
     <button class="tab" data-view="liste">Distribution des cours</button>
     <button class="tab" data-view="profs">Corps professoral</button>
-    <button class="tab" data-view="espace-prof">Mon espace</button>
   </div>
 
   <!-- VUE GRILLE -->
@@ -711,46 +554,15 @@ body.prof-mode .tab[data-view="espace-prof"]{ display:flex !important; }
   <div class="tab-content" id="view-profs">
     <div class="liste-head-row">
       <h2 class="liste-title">Corps professoral</h2>
-      <button class="btn btn-primary" id="addProfBtn" data-admin-only>+ Ajouter un prof</button>
+      <button class="btn btn-primary" id="addProfBtn">+ Ajouter un prof</button>
     </div>
     <div id="profsContainer"></div>
-
-    <!-- SECTION ADMIN : demandes de cours (visible admin seulement) -->
-    <div data-admin-only>
-      <div class="admin-section-title">
-        📋 Demandes de cours
-        <span class="tab-notif" id="demandesBadge" style="display:none;"></span>
-      </div>
-      <div id="adminDemandesContainer"><p class="admin-empty">Chargement…</p></div>
-
-      <!-- Paramètres fenêtre de disponibilités -->
-      <div class="admin-section-title" style="margin-top:32px;">⚙ Fenêtre de disponibilités</div>
-      <div id="dispoSettingsContainer"><p class="admin-empty">Chargement…</p></div>
-    </div>
-  </div>
-
-  <!-- VUE ESPACE PROF -->
-  <div class="tab-content" id="view-espace-prof">
-    <div class="espace-prof">
-      <div class="ep-section">
-        <div class="ep-section-title">👤 Mon profil</div>
-        <div id="ep-profil-content"><p class="admin-empty">Chargement…</p></div>
-      </div>
-      <div class="ep-section">
-        <div class="ep-section-title">📋 Cours souhaités</div>
-        <div id="ep-demandes-content"><p class="admin-empty">Chargement…</p></div>
-      </div>
-      <div class="ep-section">
-        <div class="ep-section-title">📅 Mes disponibilités</div>
-        <div id="ep-dispos-content"><p class="admin-empty">Chargement…</p></div>
-      </div>
-    </div>
   </div>
 
   <!-- Zone générée uniquement pour certains rapports PDF -->
   <div id="printReportsContainer" aria-hidden="true"></div>
 
-  <div class="footer-note">Version bêta — Planificateur d'horaire · Design graphique, La Cité Collégiale</div>
+  <div class="footer-note"><strong>Planificateur Horaire · version statique Vercel</strong> · Mise à jour : 2026-05-30 16:40:17 EDT<br>v2.0 — moteur algorithmique bonifié + 6 rapports PDF + vues des locaux + exports CSV/PDF.</div>
 </div>
 
 <!-- Fenêtre modale réutilisable -->
@@ -766,37 +578,6 @@ body.prof-mode .tab[data-view="espace-prof"]{ display:flex !important; }
 </div>
 
 <script>
-/* ============================================================
-   SUPABASE — Client, authentification et rôles
-   ============================================================ */
-const SUPABASE_URL = 'https://kezvurkleobvezovrocn.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_m_Q9hbUrNLBpURukxQqMqg_xQdBISXA';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let currentUser = null;
-let userRole    = 'viewer'; // 'admin' | 'viewer'
-
-async function getUserRole(userId){
-  try{
-    const { data, error } = await sb.from('user_roles').select('role').eq('user_id', userId).single();
-    console.log('[getUserRole] userId:', userId, '| data:', data, '| error:', error);
-    if(error){ console.warn('[getUserRole] Erreur Supabase:', error.message, error.code); return 'viewer'; }
-    return data?.role || 'viewer';
-  }catch(e){ console.error('[getUserRole] Exception:', e); return 'viewer'; }
-}
-
-function applyRoleUI(){
-  const isProf   = userRole === 'prof';
-  const isViewer = userRole === 'viewer';
-  document.body.classList.toggle('viewer-mode', isViewer || isProf);
-  document.body.classList.toggle('prof-mode', isProf);
-  const badge = document.getElementById('roleBadge');
-  if(badge){
-    const labels = { admin:'⚙ Admin', viewer:'👁 Lecteur', prof:'📋 Prof' };
-    badge.textContent = labels[userRole] || '👁 Lecteur';
-    badge.className   = 'role-badge ' + (userRole || 'viewer');
-  }
-}
 /* ============================================================
    ÉTAPE 1 — MODÈLE DE DONNÉES
    Source unique de vérité. Tout (grille + liste) se génère d'ici.
@@ -1033,17 +814,12 @@ function buildGrid(etape, compact=false){
     const rowStart = (c.debut - H_DEBUT) + 2;          // +1 entête, +1 base grille
     const rowEnd   = (c.fin   - H_DEBUT) + 2;
     const block = document.createElement('div');
-    const _bProf = PROFS.find(p=>p.id===c.profId);
-    const _isProfOwn = userRole==='prof' && profProfil && _bProf && _bProf.courriel && profProfil.email_cours &&
-      _bProf.courriel.toLowerCase()===profProfil.email_cours.toLowerCase();
-    block.className = 'course-block' + (_idsEnConflit.has(c.id) ? ' conflit' : '') + (_isProfOwn ? ' prof-own' : '');
-    block.style.gridColumn = (colJour + 2);
+    block.className = 'course-block' + (_idsEnConflit.has(c.id) ? ' conflit' : '');
+    block.style.gridColumn = (colJour + 2);            // +1 col heures, +1 base
     block.style.gridRow = rowStart + ' / ' + rowEnd;
     block.style.background = couleurLocal(c.local);
-    if(userRole !== 'prof'){
-      block.title = _idsEnConflit.has(c.id) ? 'Conflit d\'horaire — cliquer pour modifier' : 'Cliquer pour modifier';
-      block.onclick = ()=> openCourseModal(c.id);
-    } else if(_isProfOwn){ block.title = 'Votre cours'; }
+    block.title = _idsEnConflit.has(c.id) ? 'Conflit d\'horaire — cliquer pour modifier' : 'Cliquer pour modifier';
+    block.onclick = ()=> openCourseModal(c.id);
     const profTxt = profLabel(c.profId);
     block.innerHTML =
       '<div class="cb-code">'+c.numeroCours+(c.section?' · '+c.section:'')+'</div>'+
@@ -1205,7 +981,7 @@ function buildListe(){
       '<span class="liste-count" id="count-'+e+'"></span></h3>'+
       '<div class="table-tools">'+
         '<input class="search-input" id="search-'+e+'" placeholder="Rechercher dans l\'étape '+e+'…">'+
-        '<button class="btn btn-primary btn-sm" data-admin-only id="add-'+e+'">+ Ajouter un cours</button>'+
+        '<button class="btn btn-primary btn-sm" id="add-'+e+'">+ Ajouter un cours</button>'+
       '</div>';
     const tableWrap = document.createElement('div'); tableWrap.style.overflowX='auto';
     const table = document.createElement('table'); table.className='data-table'; table.id='table-'+e;
@@ -1284,9 +1060,9 @@ function renderBody(e){
       '<td>'+tel+'</td>'+
       '<td>'+mail+'</td>'+
       '<td class="td-actions">'+
-      '<button class="icon-btn'+(c.verrou?' icon-btn-lock':'')+'" data-admin-only title="'+(c.verrou?'Verrouillé — déverrouiller (sera reconservé à la génération)':'Verrouiller (conserver lors de la génération)')+'" data-lock="'+c.id+'">'+(c.verrou?'🔒':'🔓')+'</button>'+
-      '<button class="icon-btn" data-admin-only title="Modifier" data-edit="'+c.id+'">✎</button>'+
-      '<button class="icon-btn icon-btn-danger" data-admin-only title="Supprimer" data-del="'+c.id+'">🗑</button></td>';
+      '<button class="icon-btn'+(c.verrou?' icon-btn-lock':'')+'" title="'+(c.verrou?'Verrouillé — déverrouiller (sera reconservé à la génération)':'Verrouiller (conserver lors de la génération)')+'" data-lock="'+c.id+'">'+(c.verrou?'🔒':'🔓')+'</button>'+
+      '<button class="icon-btn" title="Modifier" data-edit="'+c.id+'">✎</button>'+
+      '<button class="icon-btn icon-btn-danger" title="Supprimer" data-del="'+c.id+'">🗑</button></td>';
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll('[data-lock]').forEach(b=> b.onclick = ()=> toggleVerrou(+b.dataset.lock));
@@ -1307,7 +1083,7 @@ const LOCAUX_CONNUS = ['D2050','D2060','EN LIGNE','COMODAL']; // COMODAL demeure
 const MODES_CONNUS = ['Comodal','En ligne','Présentiel'];
 const DUREE_COURS = 3; // Automne : tous les cours durent 3 h. On ne choisit que l'heure de début.
 // Disponibilités : 3 demi-journées par jour. Donnée destinée au futur montage automatique.
-const PERIODES = [['matin','Avant-midi'],['apres_midi','Après-midi'],['soir','Soir']];
+const PERIODES = [['AM','Avant-midi'],['PM','Après-midi'],['SOIR','Soir']];
 // Bornes horaires de chaque demi-journée [début, fin[ — sert au conflit prof/disponibilité.
 const BORNES_PERIODE = { AM:[8,12], PM:[12,16], SOIR:[16,22] };
 const JOURS_ABBR = { Lundi:'Lun', Mardi:'Mar', Mercredi:'Mer', Jeudi:'Jeu', Vendredi:'Ven' };
@@ -1673,351 +1449,33 @@ function supprimerProf(profId){
   refreshAll();
 }
 
-/* --- Vue corps professoral (depuis profs_roster Supabase) --- */
-async function chargerRoster(){
-  rosterProfs = [];
-  if(!sb) return;
-  try {
-    const { data, error } = await sb.from('profs_roster').select('*').order('nom',{ascending:true});
-    if(error) throw error;
-    rosterProfs = data || [];
-  } catch(e){ console.warn('[chargerRoster]', e); }
-}
-
+/* --- Vue corps professoral --- */
 function renderProfs(){
   const cont = document.getElementById('profsContainer');
-
-  // Bouton de migration si roster vide mais PROFS locaux existent
-  const profsUniques = [...new Map(PROFS.map(p=>[( p.courriel||p.prenom+'_'+p.nom).toLowerCase(), p])).values()];
-  const syncNeeded = profsUniques.filter(p=>
-    p.courriel && !rosterProfs.some(r=> r.email.toLowerCase()===(p.courriel||'').toLowerCase())
-  ).length;
-
-  const tri = [...rosterProfs].sort((a,b)=> (a.nom+a.prenom).localeCompare(b.nom+b.prenom,'fr'));
-
-  let rows = tri.map(r=>{
-    const email = (r.email||'').toLowerCase();
-    const st = profStatuts[email] || {};
-    const flagHtml = st.hasPendingRequest
-      ? '<span class="prof-status-flag" title="Demande(s) de cours en attente">🚩</span>' : '';
-    const calHtml = r.user_id
-      ? (st.hasDispo
-        ? '<i data-lucide="calendar-check" class="prof-icon-cal green" title="Disponibilités entrées"></i>'
-        : '<i data-lucide="calendar-x" class="prof-icon-cal grey" title="Aucune disponibilité entrée"></i>')
-      : '<i data-lucide="user-x" class="prof-icon-cal grey" title="Pas de compte de connexion"></i>';
-    const statutBadge = r.statut==='temps_plein'
-      ? '<span class="statut-perm">Temps plein</span>'
-      : '<span class="statut-cont">Contractuel·le</span>';
-    const inactifBadge = r.actif ? '' : '<span class="statut-inactif">Inactif</span>';
-    const profLocal = PROFS.find(p=> p.courriel && r.email && p.courriel.toLowerCase()===r.email.toLowerCase());
-    const nb = profLocal ? nbCoursProf(profLocal.id) : 0;
-    return '<tr'+(r.actif?'':' style="opacity:.55;"')+'>'+
-      '<td>'+esc(r.prenom||'')+'</td>'+
-      '<td>'+esc(r.nom||'')+'</td>'+
-      '<td>'+(r.email?'<a class="email-link" href="mailto:'+esc(r.email)+'">'+esc(r.email)+'</a>':'<span class="muted">—</span>')+'</td>'+
-      '<td>'+(r.telephone?esc(r.telephone):'<span class="muted">—</span>')+'</td>'+
-      '<td>'+(nb||'<span class="muted">—</span>')+'</td>'+
-      '<td>'+statutBadge+inactifBadge+'</td>'+
-      '<td class="td-actions">'+flagHtml+calHtml+
-      '<button class="icon-btn" data-admin-only title="Modifier" data-redit="'+r.id+'">✎</button>'+
-      '<button class="icon-btn icon-btn-danger" data-admin-only title="Supprimer" data-rdel="'+r.id+'">🗑</button>'+
-      '</td></tr>';
+  const tri = [...PROFS].sort((a,b)=> (a.nom+a.prenom).localeCompare(b.nom+b.prenom,'fr'));
+  let rows = tri.map(p=>{
+    const mail = p.courriel ? '<a class="email-link" href="mailto:'+esc(p.courriel)+'">'+esc(p.courriel)+'</a>' : '<span class="muted">—</span>';
+    const tel = p.telephone ? esc(p.telephone) : '<span class="muted">—</span>';
+    return '<tr>'+
+      '<td>'+esc(p.prenom||'')+'</td>'+
+      '<td>'+esc(p.nom||'')+'</td>'+
+      '<td>'+mail+'</td>'+
+      '<td>'+tel+'</td>'+
+      '<td>'+nbCoursProf(p.id)+'</td>'+
+      '<td class="td-actions"><button class="icon-btn" title="Modifier" data-pedit="'+p.id+'">✎</button>'+
+      '<button class="icon-btn icon-btn-danger" title="Supprimer" data-pdel="'+p.id+'">🗑</button></td></tr>';
   }).join('');
-
-  if(!rows) rows = '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px;">Répertoire vide — cliquez « Ajouter un prof ».</td></tr>';
-
-  const syncBtn = syncNeeded > 0
-    ? '<button class="btn btn-sm btn-ghost" onclick="migrerVersRoster()" title="Importer les profs de l\'horaire non encore dans le répertoire">⬆ Sync horaire ('+syncNeeded+')</button>'
-    : '';
-
+  if(!rows) rows = '<tr><td colspan="6" class="muted" style="text-align:center;padding:24px;">Aucun prof. Cliquez « Ajouter un prof ».</td></tr>';
   cont.innerHTML =
-    '<div class="table-container">'+
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'+
-    '<span style="font-size:13px;color:var(--text-secondary);">'+rosterProfs.length+' prof'+(rosterProfs.length!==1?'s':'')+'</span>'+
-    syncBtn+'</div>'+
-    '<div style="overflow-x:auto"><table class="data-table">'+
-    '<thead><tr>'+
-    '<th style="text-align:left">Prénom</th>'+
-    '<th style="text-align:left">Nom</th>'+
-    '<th style="text-align:left">Courriel</th>'+
-    '<th style="text-align:left">Téléphone</th>'+
-    '<th style="text-align:left">Cours</th>'+
-    '<th style="text-align:left">Statut</th>'+
-    '<th class="th-actions">Actions</th>'+
-    '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
-
-  cont.querySelectorAll('[data-redit]').forEach(b=> b.onclick = ()=> openRosterModal(+b.dataset.redit));
-  cont.querySelectorAll('[data-rdel]').forEach(b=> b.onclick = ()=> supprimerRosterEntry(+b.dataset.rdel));
-  if(window.lucide) lucide.createIcons();
-}
-
-/* --- Modal ajout / modification roster --- */
-async function openRosterModal(rosterId){
-  const editing = rosterId != null;
-  const r = editing ? rosterProfs.find(x=>x.id===rosterId) : { prenom:'', nom:'', email:'', telephone:'', numero_employe:'', statut:'contractuel', actif:true, notes:'' };
-  if(editing && !r) return;
-
-  const profLocal = editing ? PROFS.find(p=> p.courriel && r.email && p.courriel.toLowerCase()===r.email.toLowerCase()) : null;
-  _dispoTemp  = new Set(profLocal ? (profLocal.dispos  || []) : []);
-  _qualifTemp = new Set(profLocal ? (profLocal.qualifications || []) : []);
-
-  // ── Charger données Supabase si le prof a un compte ──
-  let demandesEnAttente = [];
-  let dispoSource = 'local';
-  let profPP = null; // données prof_profiles du prof
-  // Fallback : si user_id manquant dans roster, chercher via prof_profiles par email
-  let profUserId = r.user_id || null;
-  if(editing && !profUserId && r.email && sb){
-    try {
-      const { data: pp } = await sb.from('prof_profiles')
-        .select('user_id,telephone,prenom,nom,numero_employe')
-        .ilike('email_cours', r.email).maybeSingle();
-      if(pp){ profUserId = pp.user_id; profPP = pp; }
-    } catch(e){}
-  }
-  if(editing && profUserId && sb){
-    try {
-      const queries = [
-        sb.from('cours_demandes').select('*').eq('prof_user_id', profUserId).eq('statut','en_attente').order('created_at',{ascending:false}),
-        sb.from('disponibilites').select('*').eq('prof_user_id', profUserId).eq('session', sessionActive)
-      ];
-      if(!profPP) queries.push(sb.from('prof_profiles').select('user_id,telephone,prenom,nom,numero_employe').eq('user_id', profUserId).maybeSingle());
-      const results = await Promise.all(queries);
-      demandesEnAttente = results[0].data || [];
-      const dispData = results[1].data || [];
-      if(!profPP && results[2]) profPP = results[2].data;
-      if(dispData.length > 0){
-        _dispoTemp = new Set(dispData.filter(d=>d.disponible).map(d=>d.jour+'|'+d.plage));
-        dispoSource = 'supabase';
-      }
-      // Si le roster n'avait pas user_id, on l'enregistre pour la prochaine fois
-      if(!r.user_id && profUserId){
-        sb.from('profs_roster').update({ user_id: profUserId }).eq('id', rosterId).then(()=>{
-          const entry = rosterProfs.find(x=>x.id===rosterId);
-          if(entry) entry.user_id = profUserId;
-        });
-      }
-    } catch(e){ console.warn('[openRosterModal]', e); }
-  }
-
-  // ── Section demandes en attente (item 8) ──
-  let demandesSection = '';
-  if(editing && profUserId && demandesEnAttente.length > 0){
-    demandesSection = '<div class="form-section-title">🚩 Demandes de cours en attente <span class="hint">('+demandesEnAttente.length+')</span></div>'+
-      '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">';
-    demandesEnAttente.forEach(d=>{
-      const sess = d.session==='A2026'?'Automne 2026':'Hiver 2027';
-      demandesSection +=
-        '<div class="admin-demande-item">'+
-        '<div class="admin-demande-info">'+
-        '<div class="admin-demande-cours">'+esc(d.nom_cours)+' <span style="color:var(--text-light);font-size:12px;">('+esc(d.numero_cours)+')</span></div>'+
-        '<div class="admin-demande-meta">'+sess+' · '+new Date(d.created_at).toLocaleDateString('fr-CA')+'</div>'+
-        '</div>'+
-        '<div class="admin-demande-actions" style="gap:6px;">'+
-        '<button class="btn btn-sm" style="background:rgba(76,175,80,.1);color:#2e7d32;border-color:rgba(76,175,80,.4);" '+
-          'onclick="traiterDemandeModal('+d.id+',\'accepte\',\''+profUserId+'\',\''+esc(d.numero_cours)+'\','+rosterId+')">✓ Accepter</button>'+
-        '<button class="btn btn-sm btn-danger" '+
-          'onclick="traiterDemandeModal('+d.id+',\'refuse\',\''+profUserId+'\',\'\','+rosterId+')">✕ Refuser</button>'+
-        '</div></div>';
-    });
-    demandesSection += '</div>';
-  }
-
-  // ── Indicateur source des dispos (item 9) ──
-  const dispoHint = dispoSource==='supabase'
-    ? ' <span class="hint" style="color:#22c55e;">✓ Entrées par le prof</span>'
-    : (profUserId
-        ? ' <span class="hint">Prof n\'a pas encore entré ses dispos</span>'
-        : ' <span class="hint">Admin seulement (pas de compte)</span>');
-
-  // Si le prof a un profil Supabase, on affiche ses propres données (plus récentes)
-  const rTel     = (profPP?.telephone    || r.telephone    || '');
-  const rPrenom  = (profPP?.prenom       || r.prenom       || '');
-  const rNom     = (profPP?.nom          || r.nom          || '');
-  const rEmploye = (profPP?.numero_employe || r.numero_employe || '');
-  const profSyncBadge = profPP
-    ? ' <span class="hint" style="color:#22c55e;font-size:10px;">✓ Données synchronisées depuis le profil du prof</span>'
-    : '';
-
-  const body =
-    '<div class="form-error" id="formErr"></div>'+
-    '<div class="form-section-title">Informations'+profSyncBadge+'</div>'+
-    '<div class="form-grid">'+
-    '<div class="field"><label>Prénom</label><input id="r-prenom" value="'+esc(rPrenom)+'"></div>'+
-    '<div class="field"><label>Nom</label><input id="r-nom" value="'+esc(rNom)+'"></div>'+
-    '<div class="field full"><label>Courriel <span class="hint">(doit correspondre au courriel dans les cours de l\'horaire)</span></label>'+
-    '<input id="r-email" value="'+esc(r.email||'')+'" placeholder="prenom.nom@exemple.com"></div>'+
-    '<div class="field"><label>Téléphone</label><input id="r-tel" value="'+esc(rTel)+'" placeholder="613-742-2483"></div>'+
-    '<div class="field"><label>Numéro d\'employé</label><input id="r-employe" value="'+esc(rEmploye)+'"></div>'+
-    '<div class="field"><label>Statut</label>'+
-    '<select id="r-statut">'+
-    '<option value="contractuel"'+(r.statut==='contractuel'?' selected':'')+'>Contractuel·le</option>'+
-    '<option value="temps_plein"'+(r.statut==='temps_plein'?' selected':'')+'>Temps plein</option>'+
-    '</select></div>'+
-    '<div class="field"><label>Actif</label>'+
-    '<select id="r-actif">'+
-    '<option value="true"'+(r.actif?' selected':'')+'>Actif</option>'+
-    '<option value="false"'+(!r.actif?' selected':'')+'>Inactif (ne sera pas contacté)</option>'+
-    '</select></div>'+
-    '<div class="field full"><label>Notes <span class="hint">(internes, non visibles par le prof)</span></label>'+
-    '<textarea id="r-notes" rows="2" style="width:100%;resize:vertical;">'+esc(r.notes||'')+'</textarea></div>'+
-    '</div>'+
-    demandesSection+
-    '<div class="form-section-title">Disponibilités'+dispoHint+'</div>'+
-    '<div class="form-grid"><div class="field full">'+buildDispoGrid()+'</div></div>'+
-    '<div class="form-section-title">Cours assignés dans l\'horaire</div>'+
-    buildEnseignes(profLocal ? profLocal.id : null)+
-    '<div class="form-section-title">Cours que ce prof PEUT enseigner <span class="hint">(qualifications pour le générateur)</span></div>'+
-    buildQualifList(profLocal ? profLocal.id : null);
-
-  const foot =
-    (editing ? '<button class="btn btn-danger foot-left" onclick="supprimerRosterEntry('+rosterId+')">Supprimer</button>' : '')+
-    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>'+
-    '<button class="btn btn-primary" onclick="enregistrerRosterEntry('+(editing?rosterId:'null')+')">Enregistrer</button>';
-  openModal(editing ? 'Modifier le prof' : 'Ajouter un prof', body, foot);
-}
-
-/* --- Approuver / refuser depuis le modal d'un prof (item 8) --- */
-async function traiterDemandeModal(id, statut, profUserId, numeroCours, rosterId){
-  let noteAdmin = '';
-  if(statut==='refuse'){
-    const r = prompt('Note pour le prof (optionnel) :');
-    if(r===null) return;
-    noteAdmin = r;
-  }
-  try {
-    await sb.from('cours_demandes').update({ statut, note_admin:noteAdmin, updated_at:new Date().toISOString() }).eq('id',id);
-    if(statut==='accepte' && profUserId && numeroCours){
-      const rProf = rosterProfs.find(rr=>rr.user_id===profUserId);
-      if(rProf){
-        const profLocal = PROFS.find(p=>p.courriel && p.courriel.toLowerCase()===rProf.email.toLowerCase());
-        if(profLocal){
-          if(!profLocal.qualifications) profLocal.qualifications = [];
-          if(!profLocal.qualifications.includes(numeroCours)){
-            profLocal.qualifications.push(numeroCours);
-            sauvegarder();
-          }
-        }
-      }
-    }
-    await chargerStatutsProfs();
-    renderProfs();
-    // Ré-ouvrir le modal rafraîchi
-    if(rosterId != null) openRosterModal(rosterId);
-  } catch(e){ alert('Erreur : '+(e.message||e)); }
-}
-
-async function enregistrerRosterEntry(rosterId){
-  const prenom         = document.getElementById('r-prenom')?.value.trim() || '';
-  const nom            = document.getElementById('r-nom')?.value.trim() || '';
-  const email          = document.getElementById('r-email')?.value.trim() || '';
-  const telephone      = document.getElementById('r-tel')?.value.trim() || '';
-  const numero_employe = document.getElementById('r-employe')?.value.trim() || '';
-  const statut         = document.getElementById('r-statut')?.value || 'contractuel';
-  const actif          = document.getElementById('r-actif')?.value === 'true';
-  const notes          = document.getElementById('r-notes')?.value.trim() || '';
-  const qualifications = Array.from(document.querySelectorAll('#modalBody .q-check'))
-    .filter(cb => cb.checked).map(cb => cb.dataset.num);
-
-  if(!prenom && !nom){ const e=document.getElementById('formErr'); e.textContent='Indiquez au moins un prénom ou un nom.'; e.classList.add('show'); return; }
-  if(!email){ const e=document.getElementById('formErr'); e.textContent='Le courriel est obligatoire.'; e.classList.add('show'); return; }
-
-  const payload = { prenom, nom, email, telephone, numero_employe, statut, actif, notes, updated_at: new Date().toISOString() };
-
-  try {
-    if(rosterId != null){
-      const { error } = await sb.from('profs_roster').update(payload).eq('id', rosterId);
-      if(error) throw error;
-    } else {
-      const { error } = await sb.from('profs_roster').insert(payload);
-      if(error) throw error;
-    }
-    // Sync avec PROFS local (dispos, qualifications, infos de base)
-    const profLocal = PROFS.find(p=> p.courriel && p.courriel.toLowerCase()===email.toLowerCase());
-    const localStatut = statut==='temps_plein' ? 'permanent' : 'contractuel';
-    if(profLocal){
-      Object.assign(profLocal, { prenom, nom, telephone, statut: localStatut, dispos: Array.from(_dispoTemp), qualifications });
-    } else if(rosterId==null){
-      PROFS.push({ id: nextProfId(), prenom, nom, courriel: email, telephone, statut: localStatut, dispos: Array.from(_dispoTemp), qualifications });
-    }
-    // Sync dispos vers Supabase si le prof a un compte (admin peut modifier les dispos)
-    const rosterEntry = rosterId != null ? rosterProfs.find(x=>x.id===rosterId) : null;
-    if(rosterEntry?.user_id && sb){
-      const rows = [];
-      for(const j of JOURS){
-        for(const [code] of PERIODES){
-          rows.push({ prof_user_id: rosterEntry.user_id, session: sessionActive,
-            jour: j, plage: code, disponible: _dispoTemp.has(j+'|'+code) });
-        }
-      }
-      const { error: dispoErr } = await sb.from('disponibilites')
-        .upsert(rows, { onConflict:'prof_user_id,session,jour,plage' });
-      if(dispoErr){
-        const err = document.getElementById('formErr');
-        err.textContent = 'Profil sauvegardé mais erreur sync dispos : '+dispoErr.message;
-        err.classList.add('show');
-        // Ne pas fermer le modal — laisser l'admin voir l'erreur
-        await chargerRoster(); renderProfs(); sauvegarder();
-        return;
-      }
-    }
-    closeModal();
-    await chargerRoster();
-    renderProfs();
-    sauvegarder();
-  } catch(e){
-    const err=document.getElementById('formErr');
-    err.textContent='Erreur : '+(e.message||e); err.classList.add('show');
-  }
-}
-
-async function supprimerRosterEntry(rosterId){
-  const r = rosterProfs.find(x=>x.id===rosterId); if(!r) return;
-  const profLocal = PROFS.find(p=> p.courriel && r.email && p.courriel.toLowerCase()===r.email.toLowerCase());
-  const nb = profLocal ? nbCoursProf(profLocal.id) : 0;
-  const msg = nb
-    ? 'Supprimer '+(r.prenom+' '+r.nom).trim()+' du répertoire ? Ce prof a '+nb+' cours dans l\'horaire (ils seront marqués « À confirmer »).'
-    : 'Supprimer '+(r.prenom+' '+r.nom).trim()+' du répertoire ?';
-  if(!confirm(msg)) return;
-  try {
-    const { error } = await sb.from('profs_roster').delete().eq('id', rosterId);
-    if(error) throw error;
-    // Sync local
-    if(profLocal){
-      COURS.forEach(c=>{ if(c.profId===profLocal.id) c.profId=null; });
-      PROFS.splice(PROFS.findIndex(x=>x.id===profLocal.id), 1);
-    }
-    closeModal();
-    await chargerRoster();
-    renderProfs();
-    sauvegarder();
-  } catch(e){ alert('Erreur : '+(e.message||e)); }
-}
-
-/* --- Migration one-time : importe profs de COURS_BRUTS vers roster --- */
-async function migrerVersRoster(){
-  const uniques = [...new Map(PROFS.filter(p=>p.courriel&&p.courriel!=='À confirmer')
-    .map(p=>[ p.courriel.toLowerCase(), p ])).values()];
-  const nouveaux = uniques.filter(p=>
-    !rosterProfs.some(r=> r.email.toLowerCase()===p.courriel.toLowerCase())
-  );
-  if(nouveaux.length===0){ alert('Tous les profs de l\'horaire sont déjà dans le répertoire.'); return; }
-  if(!confirm('Importer '+nouveaux.length+' prof(s) depuis l\'horaire vers le répertoire ?')) return;
-  const inserts = nouveaux.map(p=>({
-    email: p.courriel,
-    prenom: p.prenom || '',
-    nom: p.nom || '',
-    telephone: p.telephone || '',
-    statut: (p.statut==='permanent'||PROFS_PERMANENTS.includes((p.prenom+' '+p.nom).trim())) ? 'temps_plein' : 'contractuel',
-    actif: true
-  }));
-  try {
-    const { error } = await sb.from('profs_roster').insert(inserts);
-    if(error) throw error;
-    await chargerRoster();
-    renderProfs();
-    alert(nouveaux.length+' prof(s) importé(s) avec succès.');
-  } catch(e){ alert('Erreur migration : '+(e.message||e)); }
+    '<div class="table-container"><div style="overflow-x:auto"><table class="data-table">'+
+    '<thead><tr><th class="th-actions" style="text-align:left">Prénom</th>'+
+    '<th class="th-actions" style="text-align:left">Nom</th>'+
+    '<th class="th-actions" style="text-align:left">Courriel</th>'+
+    '<th class="th-actions" style="text-align:left">Numéro du prof</th>'+
+    '<th class="th-actions" style="text-align:left">Cours</th>'+
+    '<th class="th-actions">Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  cont.querySelectorAll('[data-pedit]').forEach(b=> b.onclick = ()=> openProfModal(+b.dataset.pedit));
+  cont.querySelectorAll('[data-pdel]').forEach(b=> b.onclick = ()=> supprimerProf(+b.dataset.pdel));
 }
 
 /* ============================================================
@@ -2365,124 +1823,18 @@ function appliquerProposition(index){
   alert('Proposition '+(index+1)+' appliquée et sauvegardée automatiquement.');
 }
 
-// Export Excel coloré (SpreadsheetML 2003, hors-ligne) : 2 feuilles — Liste des cours + Grille par étape.
-// Couleurs des locaux conformes à la charte : D2050 vert, D2060 mauve, EN LIGNE or, COMODAL corail.
-function exporterExcel(){
-  const S = SESSIONS[sessionActive];
-  const xmlEsc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const NL = '&#10;';
-  const LOC = {
-    D2050:{bg:'#366E58',fg:'#FFFFFF'},
-    D2060:{bg:'#694966',fg:'#FFFFFF'},
-    ENLIGNE:{bg:'#D5A021',fg:'#1A1A1A'},
-    COMODAL:{bg:'#E3655B',fg:'#FFFFFF'},
-    DEF:{bg:'#6B7280',fg:'#FFFFFF'}
-  };
-  function locKey(local){
-    const u=(local||'').toUpperCase();
-    if(u==='D2050')return 'D2050';
-    if(u==='D2060')return 'D2060';
-    if(u==='EN LIGNE')return 'ENLIGNE';
-    if(u==='COMODAL')return 'COMODAL';
-    return 'DEF';
-  }
-  function borders(color){
-    return ['Top','Bottom','Left','Right'].map(p=>'<Border ss:Position="'+p+'" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="'+color+'"/>').join('');
-  }
-  function cellS(v,style,extra){ return '<Cell'+(style?' ss:StyleID="'+style+'"':'')+(extra||'')+'><Data ss:Type="String">'+xmlEsc(v)+'</Data></Cell>'; }
-  function cellN(v,style){ return '<Cell'+(style?' ss:StyleID="'+style+'"':'')+'><Data ss:Type="Number">'+v+'</Data></Cell>'; }
-
-  let locStyles='';
-  Object.keys(LOC).forEach(k=>{
-    const c=LOC[k];
-    locStyles += '<Style ss:ID="l'+k+'"><Font ss:Bold="1" ss:Color="'+c.fg+'"/><Interior ss:Color="'+c.bg+'" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders>'+borders('#FFFFFF')+'</Borders></Style>';
-    locStyles += '<Style ss:ID="g'+k+'"><Font ss:Bold="1" ss:Size="9" ss:Color="'+c.fg+'"/><Interior ss:Color="'+c.bg+'" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders>'+borders('#FFFFFF')+'</Borders></Style>';
+function exporterCSV(){
+  const rows = [['Session','Étape','# cours','Section','Nom du cours','Jour','Horaire','Mode','Local','Prof','Courriel','Verrouillé']];
+  COURS.filter(c=>c.session===sessionActive).sort((a,b)=>a.etape-b.etape || (ORDRE_JOUR[a.jour]||99)-(ORDRE_JOUR[b.jour]||99) || (a.debut||99)-(b.debut||99)).forEach(c=>{
+    const p = getProf(c.profId);
+    rows.push([SESSIONS[sessionActive].label,c.etape,c.numeroCours,c.section||'',c.nomCours,c.jour,c.plageHoraire,c.modePrestation,c.local,profLabel(c.profId),p?p.courriel:'',c.verrou?'oui':'non']);
   });
-  const styles =
-    '<Styles>'+
-    '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>'+
-    '<Style ss:ID="title"><Font ss:Bold="1" ss:Size="14" ss:Color="#FFFFFF"/><Interior ss:Color="#2D5F4C" ss:Pattern="Solid"/><Alignment ss:Vertical="Center"/></Style>'+
-    '<Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#366E58" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>'+
-    '<Style ss:ID="cell"><Alignment ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/></Borders></Style>'+
-    '<Style ss:ID="cellC"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/></Borders></Style>'+
-    '<Style ss:ID="gtitle"><Font ss:Bold="1" ss:Size="12" ss:Color="#FFFFFF"/><Interior ss:Color="#2D5F4C" ss:Pattern="Solid"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/></Style>'+
-    '<Style ss:ID="ghdr"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#366E58" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders>'+borders('#FFFFFF')+'</Borders></Style>'+
-    '<Style ss:ID="gtime"><Font ss:Bold="1" ss:Size="9" ss:Color="#366E58"/><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Borders>'+borders('#E5E5E5')+'</Borders></Style>'+
-    '<Style ss:ID="gempty"><Borders>'+borders('#E5E5E5')+'</Borders></Style>'+
-    locStyles+
-    '</Styles>';
-
-  const headers = ['Session','Étape','# cours','Section','Nom du cours','Jour','Horaire','Mode','Local','Professeur','Courriel','Verrouillé'];
-  const listCols = '<Column ss:Width="78"/><Column ss:Width="40"/><Column ss:Width="82"/><Column ss:Width="54"/><Column ss:Width="160"/><Column ss:Width="68"/><Column ss:Width="82"/><Column ss:Width="84"/><Column ss:Width="72"/><Column ss:Width="130"/><Column ss:Width="170"/><Column ss:Width="64"/>';
-  let listRows = '<Row ss:Height="24"><Cell ss:StyleID="title" ss:MergeAcross="11"><Data ss:Type="String">'+xmlEsc('Horaire — '+S.label)+'</Data></Cell></Row>';
-  listRows += '<Row ss:Height="30">'+headers.map(h=>cellS(h,'hdr')).join('')+'</Row>';
-  COURS.filter(c=>c.session===sessionActive)
-    .sort((a,b)=> a.etape-b.etape || (ORDRE_JOUR[a.jour]||99)-(ORDRE_JOUR[b.jour]||99) || (a.debut==null?99:a.debut)-(b.debut==null?99:b.debut) || String(a.numeroCours).localeCompare(String(b.numeroCours),'fr'))
-    .forEach(c=>{
-      const p = getProf(c.profId);
-      listRows += '<Row>'+
-        cellS(S.label,'cell')+
-        cellN(c.etape,'cellC')+
-        cellS(c.numeroCours||'','cell')+
-        cellS(c.section||'','cell')+
-        cellS(c.nomCours||'','cell')+
-        cellS(c.jour||'','cell')+
-        cellS(c.plageHoraire||'','cell')+
-        cellS(c.modePrestation||'','cell')+
-        cellS(c.local||'','l'+locKey(c.local))+
-        cellS(profLabel(c.profId),'cell')+
-        cellS(p?p.courriel:'','cell')+
-        cellS(c.verrou?'Oui':'Non','cellC')+
-      '</Row>';
-    });
-
-  const gridCols = '<Column ss:Width="46"/>'+JOURS.map(()=>'<Column ss:Width="138"/>').join('');
-  let gridRows='';
-  ETAPES.forEach((e,idx)=>{
-    const ecs = COURS.filter(c=>c.session===sessionActive && c.etape===e && c.jour && c.debut!=null && !estStage(c));
-    const occ={};
-    ecs.forEach(c=>{
-      const col=ORDRE_JOUR[c.jour]; if(!col)return;
-      const startRow=c.debut-H_DEBUT;
-      const span=Math.max(1,(c.fin||(c.debut+DUREE_COURS))-c.debut);
-      occ[col+'_'+startRow]={c,span};
-      for(let k=1;k<span;k++) occ[col+'_'+(startRow+k)]='skip';
-    });
-    if(idx>0) gridRows += '<Row ss:Height="10"></Row>';
-    gridRows += '<Row ss:Height="24"><Cell ss:StyleID="gtitle" ss:MergeAcross="5"><Data ss:Type="String">'+xmlEsc('Étape '+e+' — '+S.label)+'</Data></Cell></Row>';
-    gridRows += '<Row ss:Height="22">'+cellS('Heure','ghdr')+JOURS.map(j=>cellS(j,'ghdr')).join('')+'</Row>';
-    const nRows=H_FIN-H_DEBUT;
-    for(let r=0;r<nRows;r++){
-      let row='<Row ss:Height="30">'+cellS((H_DEBUT+r)+'h','gtime');
-      for(let d=1; d<=5; d++){
-        const v=occ[d+'_'+r], xlCol=d+1;
-        if(v==='skip') continue;
-        if(v){
-          const c=v.c;
-          const merge = v.span>1 ? ' ss:MergeDown="'+(v.span-1)+'"' : '';
-          const txt = (c.numeroCours?c.numeroCours+NL:'')+xmlEsc(c.nomCours||'')+NL+xmlEsc(profLabel(c.profId))+' · '+xmlEsc(c.local||'');
-          row += '<Cell ss:Index="'+xlCol+'" ss:StyleID="g'+locKey(c.local)+'"'+merge+'><Data ss:Type="String">'+txt+'</Data></Cell>';
-        } else {
-          row += '<Cell ss:Index="'+xlCol+'" ss:StyleID="gempty"><Data ss:Type="String"></Data></Cell>';
-        }
-      }
-      gridRows += row+'</Row>';
-    }
-  });
-
-  const wb =
-    '<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n'+
-    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+
-    styles+
-    '<Worksheet ss:Name="Liste des cours"><Table>'+listCols+listRows+'</Table></Worksheet>'+
-    '<Worksheet ss:Name="Grille par étape"><Table>'+gridCols+gridRows+'</Table></Worksheet>'+
-    '</Workbook>';
-
-  const blob = new Blob([wb], {type:'application/vnd.ms-excel'});
+  const csv = rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'horaire-'+sessionActive+'.xls';
+  a.download = 'horaire-'+sessionActive+'.csv';
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 
@@ -2592,18 +1944,12 @@ function majStatutSauvegarde(ok){
   el.textContent = 'Enregistré ✓ ' + p(d.getHours()) + ':' + p(d.getMinutes());
 }
 
-async function sauvegarder(){
-  if(userRole !== 'admin'){ majStatutSauvegarde(true); return; }
+function sauvegarder(){
   try{
-    const { error } = await sb.from('horaire_data')
-      .upsert({ id:1, cours:COURS, profs:PROFS, updated_at: new Date().toISOString() }, { onConflict:'id' });
-    if(error) throw error;
-    // Cache local en cas de perte de connexion
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({ version:'1.0', profs:PROFS, cours:COURS })); }catch(e){}
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version:'1.0', profs:PROFS, cours:COURS }));
     majStatutSauvegarde(true);
   }catch(e){
-    console.error('Erreur Supabase (sauvegarder):', e);
-    majStatutSauvegarde(false);
+    majStatutSauvegarde(false); // certains navigateurs bloquent localStorage sur les fichiers locaux
   }
 }
 
@@ -2616,23 +1962,12 @@ function appliquerDonnees(d){
   return true;
 }
 
-async function chargerSauvegarde(){
+function chargerSauvegarde(){
   try{
-    const { data, error } = await sb.from('horaire_data')
-      .select('cours, profs').eq('id', 1).single();
-    if(error || !data) throw new Error('no data');
-    const c = Array.isArray(data.cours) ? data.cours : [];
-    const p = Array.isArray(data.profs) ? data.profs : [];
-    if(!c.length && !p.length) return false; // DB vide → charger les données par défaut
-    return appliquerDonnees({ cours:c, profs:p });
-  }catch(e){
-    // Repli sur localStorage si la DB est inaccessible
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return false;
-      return appliquerDonnees(JSON.parse(raw));
-    }catch(e2){ return false; }
-  }
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    return appliquerDonnees(JSON.parse(raw));
+  }catch(e){ return false; }
 }
 
 function exporterJSON(){
@@ -2662,14 +1997,12 @@ function importerJSON(file){
   reader.readAsText(file);
 }
 
-async function reinitialiser(){
-  if(userRole !== 'admin') return;
+function reinitialiser(){
   if(!confirm('Réinitialiser au cursus 2026-2027 d\'origine ?\nToutes vos modifications seront perdues.')) return;
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   chargerDonneesParDefaut();
   buildListe();
   renderLegend();
-  await sauvegarder();
   refreshAll();
 }
 
@@ -2679,15 +2012,14 @@ async function reinitialiser(){
 const VERSIONS_KEY = 'planificateur-versions-2026-2027';
 const MAX_VERSIONS = 30; // on garde les 30 plus récentes
 
-async function lireVersions(){
-  try{
-    const { data } = await sb.from('versions')
-      .select('*').order('date', { ascending:false }).limit(30);
-    return data || [];
-  }catch(e){ return []; }
+function lireVersions(){
+  try{ return JSON.parse(localStorage.getItem(VERSIONS_KEY)) || []; }
+  catch(e){ return []; }
 }
-// Maintenu pour compatibilité (non utilisé — écriture individuelle dans Supabase)
-async function ecrireVersions(arr){ return true; }
+function ecrireVersions(arr){
+  try{ localStorage.setItem(VERSIONS_KEY, JSON.stringify(arr)); return true; }
+  catch(e){ return false; }
+}
 // Étiquette automatique « 30 mai 2026, 14 h 05 »
 function libelleDate(iso){
   const d = new Date(iso);
@@ -2695,45 +2027,46 @@ function libelleDate(iso){
   catch(e){ return d.toLocaleString(); }
 }
 
-async function sauvegarderVersion(){
-  if(userRole !== 'admin') return;
+function sauvegarderVersion(){
   const nom = prompt('Nom de cette version ? (facultatif — laissez vide pour la date seulement)', '');
-  if(nom===null) return;
+  if(nom===null) return; // Annuler
   const v = {
-    id:       Date.now(),
-    date:     new Date().toISOString(),
-    label:    (nom||'').trim(),
-    nb_cours: COURS.length,
-    nb_profs: PROFS.length,
-    cours:    JSON.parse(JSON.stringify(COURS)),
-    profs:    JSON.parse(JSON.stringify(PROFS))
+    id: Date.now(),
+    date: new Date().toISOString(),
+    label: (nom||'').trim(),
+    nbCours: COURS.length,
+    nbProfs: PROFS.length,
+    // copies indépendantes : les modifications futures ne toucheront pas la version sauvegardée
+    profs: JSON.parse(JSON.stringify(PROFS)),
+    cours: JSON.parse(JSON.stringify(COURS))
   };
-  try{
-    const { error } = await sb.from('versions').insert(v);
-    if(error) throw error;
+  const arr = lireVersions();
+  arr.unshift(v);                       // plus récente en premier
+  if(arr.length > MAX_VERSIONS) arr.length = MAX_VERSIONS;
+  if(ecrireVersions(arr)){
     alert('Version enregistrée — ' + libelleDate(v.date) + (v.label ? ' (« '+v.label+' »)' : '') + '.');
-  }catch(e){
-    alert('Erreur lors de la sauvegarde de la version : ' + (e.message || e));
+  } else {
+    alert('Impossible d\'enregistrer la version (sauvegarde du navigateur bloquée).\nUtilisez plutôt « Exporter » pour conserver une copie.');
   }
 }
 
-async function openVersionsModal(){
-  const arr = await lireVersions();
+function openVersionsModal(){
+  const arr = lireVersions();
   let body;
   if(!arr.length){
     body = '<p class="qualif-empty">Aucune version enregistrée pour l\'instant.<br>Cliquez « 💾 Sauvegarder une version » pour conserver l\'horaire actuel.</p>';
   } else {
-    body = '<p class="hint" style="margin-bottom:12px;">Choisissez une version pour y revenir. La restauration remplace l\'horaire actuel — pensez à sauvegarder une version avant.</p>'+
+    body = '<p class="hint" style="margin-bottom:12px;">Choisissez une version pour y revenir. La restauration remplace l\'horaire actuel — pensez à sauvegarder une version avant, au besoin.</p>'+
       '<div class="versions-list">'+ arr.map(v=>
         '<div class="version-item">'+
           '<div class="version-info">'+
             '<span class="version-date">'+esc(libelleDate(v.date))+'</span>'+
             (v.label ? '<span class="version-label">'+esc(v.label)+'</span>' : '')+
-            '<span class="version-meta">'+(v.nb_cours||v.nbCours||0)+' cours · '+(v.nb_profs||v.nbProfs||0)+' profs</span>'+
+            '<span class="version-meta">'+v.nbCours+' cours · '+v.nbProfs+' profs</span>'+
           '</div>'+
           '<div class="version-actions">'+
-            (userRole==='admin' ? '<button class="btn btn-sm btn-primary" onclick="restaurerVersion('+v.id+')">Restaurer</button>' : '')+
-            (userRole==='admin' ? '<button class="btn btn-sm btn-ghost" onclick="supprimerVersion('+v.id+')" title="Supprimer cette version">🗑</button>' : '')+
+            '<button class="btn btn-sm btn-primary" onclick="restaurerVersion('+v.id+')">Restaurer</button>'+
+            '<button class="btn btn-sm btn-ghost" onclick="supprimerVersion('+v.id+')" title="Supprimer cette version">🗑</button>'+
           '</div>'+
         '</div>'
       ).join('')+'</div>';
@@ -2742,28 +2075,27 @@ async function openVersionsModal(){
   openModal('Historique des versions', body, foot);
 }
 
-async function restaurerVersion(id){
-  const arr = await lireVersions();
-  const v = arr.find(x=> String(x.id)===String(id));
+function restaurerVersion(id){
+  const v = lireVersions().find(x=> x.id===id);
   if(!v) return;
   if(!confirm('Revenir à la version du ' + libelleDate(v.date) + (v.label ? ' (« '+v.label+' »)' : '') +
               ' ?\nL\'horaire actuel sera remplacé.')) return;
+  // copie indépendante pour ne pas lier les données vivantes à la version stockée
   appliquerDonnees({ profs: JSON.parse(JSON.stringify(v.profs)), cours: JSON.parse(JSON.stringify(v.cours)) });
   buildListe();
   renderLegend();
-  await sauvegarder();
   refreshAll();
   closeModal();
   alert('Version restaurée — ' + libelleDate(v.date) + '.');
 }
 
-async function supprimerVersion(id){
-  const arr = await lireVersions();
-  const v = arr.find(x=> String(x.id)===String(id));
+function supprimerVersion(id){
+  const arr = lireVersions();
+  const v = arr.find(x=> x.id===id);
   if(!v) return;
   if(!confirm('Supprimer la version du ' + libelleDate(v.date) + ' ?')) return;
-  await sb.from('versions').delete().eq('id', id);
-  openVersionsModal().catch(console.error);
+  ecrireVersions(arr.filter(x=> x.id!==id));
+  openVersionsModal(); // rafraîchir la liste
 }
 
 /* ============================================================
@@ -2777,10 +2109,6 @@ document.querySelectorAll('.tab').forEach(tab=>{
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('view-'+tab.dataset.view).classList.add('active');
-    // Rafraîchir les données admin quand on revient dans Corps professoral
-    if(tab.dataset.view === 'profs' && userRole === 'admin'){
-      chargerAdminSection().catch(console.error);
-    }
   };
 });
 
@@ -2803,15 +2131,15 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 // Changement de session (Automne / Hiver)
 document.getElementById('sessionSelect').onchange = e=> switchSession(e.target.value);
 
-// Ajouter un prof (roster Supabase)
-document.getElementById('addProfBtn').onclick = ()=> openRosterModal(null);
+// Ajouter un prof
+document.getElementById('addProfBtn').onclick = ()=> openProfModal(null);
 
 // Génération automatique de l'horaire
 document.getElementById('btnGenerer').onclick = openGenererModal;
 
 // Versions : sauvegarder une version datée / ouvrir l'historique
-document.getElementById('btnSaveVersion').onclick = ()=> sauvegarderVersion().catch(console.error);
-document.getElementById('btnVersions').onclick = ()=> openVersionsModal().catch(console.error);
+document.getElementById('btnSaveVersion').onclick = sauvegarderVersion;
+document.getElementById('btnVersions').onclick = openVersionsModal;
 
 // Exports branchés
 let _printRestoreState = null;
@@ -2873,12 +2201,13 @@ function coursSessionDuProf(profId){
 
 function buildContractDispoMatrix(dispos){
   const set = new Set(Array.isArray(dispos) ? dispos : []);
+  const labels = { AM:'AM', PM:'PM', SOIR:'SOIR' };
   const fillSvg = '<svg class="contract-dispo-fill" viewBox="0 0 100 36" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect x="0" y="0" width="100" height="36" rx="3" ry="3" fill="#000"></rect></svg>';
   let html = '<div class="contract-dispo-matrix">';
   html += '<div class="contract-dispo-corner"></div>';
   html += JOURS.map(j=>'<div class="contract-dispo-head">'+esc(JOURS_ABBR[j]||j)+'</div>').join('');
   PERIODES.forEach(([code,label])=>{
-    html += '<div class="contract-dispo-rowlabel">'+esc(label)+'</div>';
+    html += '<div class="contract-dispo-rowlabel">'+esc(labels[code] || label)+'</div>';
     JOURS.forEach(j=>{
       const ok = set.has(j+'|'+code);
       html += '<div class="contract-dispo-cell '+(ok?'available':'unavailable')+'">'+(ok?fillSvg:'&nbsp;')+'</div>';
@@ -3018,7 +2347,7 @@ window.addEventListener('afterprint', ()=>{
   }
 });
 document.getElementById('btnPDF').onclick = openPDFOptionsModal;
-document.getElementById('btnExcel').onclick = exporterExcel;
+document.getElementById('btnExcel').onclick = exporterCSV;
 
 // Gestion des données : export / import / réinitialisation
 document.getElementById('btnExport').onclick = exporterJSON;
@@ -3058,621 +2387,18 @@ document.getElementById('btnReset').onclick = reinitialiser;
   resize(); draw();
 })();
 
-/* ============================================================
-   RÔLE PROF — profil, disponibilités, demandes de cours
-   ============================================================ */
-
-let profProfil    = null;  // données prof_profiles de l'utilisateur courant
-let dispoSettings = null;  // paramètres de la fenêtre de dispos
-let profStatuts   = {};    // statuts admin : { [email_lower]: { hasPendingRequest, hasDispo } }
-let rosterProfs   = [];    // liste maître depuis profs_roster (Supabase)
-let _dispoSaveTimer = null;
-
-async function chargerProfProfil(){
-  window._profRosterLinked = false;
-  try {
-    const loginEmail = currentUser.email || '';
-
-    // 1. Chercher le profil existant
-    const { data } = await sb.from('prof_profiles')
-      .select('*').eq('user_id', currentUser.id).maybeSingle();
-
-    if(data){
-      profProfil = data;
-      // Tenter de lier via email_cours OU email de connexion
-      const emailsToTry = [...new Set([profProfil.email_cours, loginEmail].filter(Boolean))];
-      for(const tryEmail of emailsToTry){
-        const { data: rEntry } = await sb.from('profs_roster')
-          .select('id, user_id, email').ilike('email', tryEmail).maybeSingle();
-        if(rEntry){
-          window._profRosterLinked = true;
-          if(!rEntry.user_id)
-            await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
-          // Corriger email_cours si besoin
-          if(profProfil.email_cours?.toLowerCase() !== rEntry.email.toLowerCase()){
-            await sb.from('prof_profiles').update({ email_cours: rEntry.email }).eq('user_id', currentUser.id);
-            profProfil.email_cours = rEntry.email;
-          }
-          break;
-        }
-      }
-      // Profil existant mais aucune entrée roster → créer automatiquement
-      if(!window._profRosterLinked){
-        const rosterEmail = profProfil.email_cours || loginEmail;
-        const { error: rInsertErr } = await sb.from('profs_roster').insert({
-          prenom:   profProfil.prenom || '',
-          nom:      profProfil.nom || '',
-          email:    rosterEmail,
-          user_id:  currentUser.id,
-          statut:   profProfil.statut || 'contractuel',
-          actif:    true,
-          notes:    'Ajouté automatiquement à la connexion'
-        });
-        if(!rInsertErr) window._profRosterLinked = true;
-        else console.warn('[chargerProfProfil] roster insert:', rInsertErr.message);
-      }
-      return;
-    }
-
-    // 2. Pas de profil → chercher dans roster par email de connexion
-    const { data: rEntry } = await sb.from('profs_roster')
-      .select('*').ilike('email', loginEmail).maybeSingle();
-
-    const newProfile = {
-      user_id:        currentUser.id,
-      prenom:         rEntry?.prenom         || '',
-      nom:            rEntry?.nom            || '',
-      email_cours:    rEntry?.email          || loginEmail,
-      statut:         rEntry?.statut         || 'contractuel',
-      numero_employe: rEntry?.numero_employe || '',
-      telephone:      rEntry?.telephone      || ''
-    };
-
-    const { data: created, error: createErr } = await sb.from('prof_profiles')
-      .insert(newProfile).select().single();
-    if(createErr){ console.warn('[chargerProfProfil] INSERT:', createErr.message); profProfil = null; return; }
-    profProfil = created;
-
-    if(rEntry){
-      // Lier le roster existant
-      if(!rEntry.user_id)
-        await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
-      window._profRosterLinked = true;
-    } else {
-      // Aucune entrée roster → créer automatiquement
-      const { error: rInsertErr } = await sb.from('profs_roster').insert({
-        prenom:  newProfile.prenom,
-        nom:     newProfile.nom,
-        email:   loginEmail,
-        user_id: currentUser.id,
-        statut:  'contractuel',
-        actif:   true,
-        notes:   'Ajouté automatiquement à la connexion'
-      });
-      if(!rInsertErr) window._profRosterLinked = true;
-    }
-
-  } catch(e){
-    console.warn('[chargerProfProfil]', e);
-    profProfil = null;
-  }
-}
-
-async function chargerDispoSettings(){
-  try {
-    const { data } = await sb.from('dispo_settings').select('*').eq('id',1).single();
-    dispoSettings = data || { a2026_ouverte:false, h2027_ouverte:false, a2026_message:'', h2027_message:'' };
-  } catch(e){ dispoSettings = { a2026_ouverte:false, h2027_ouverte:false, a2026_message:'', h2027_message:'' }; }
-}
-
-async function renderEspaceProf(){
-  await chargerProfProfil();
-  await chargerDispoSettings();
-  renderProfProfil();
-  await renderProfDemandes();
-  await renderProfDispos();
-}
-
-function renderProfProfil(){
-  const el = document.getElementById('ep-profil-content');
-  if(!profProfil){ el.innerHTML='<p class="admin-empty">Profil non trouvé. Contactez l\'administrateur.</p>'; return; }
-  const st = profProfil.statut==='temps_plein' ? 'Temps plein' : 'Contractuel·le';
-  const linkBanner = window._profRosterLinked ? '' : `
-    <div style="background:rgba(255,160,0,.12);border:1px solid rgba(255,160,0,.4);border-radius:10px;padding:14px 16px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;">
-      <span style="font-size:18px;">⚠️</span>
-      <div>
-        <div style="font-weight:600;color:#b45309;margin-bottom:4px;">Compte non lié à la liste des profs</div>
-        <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">
-          Votre courriel de connexion <strong>${esc(currentUser?.email||'')}</strong> ne correspond à aucune entrée dans la liste.
-          Entrez votre <strong>courriel institutionnel La Cité</strong> dans le champ ci-dessous et sauvegardez —
-          le lien sera fait automatiquement et l'admin pourra voir vos disponibilités.
-        </div>
-      </div>
-    </div>`;
-  el.innerHTML = `
-    ${linkBanner}
-    <div class="ep-profil-grid">
-      <div class="field">
-        <label>Prénom</label>
-        <input id="pp-prenom" value="${esc(profProfil.prenom)}" placeholder="Prénom">
-      </div>
-      <div class="field">
-        <label>Nom</label>
-        <input id="pp-nom" value="${esc(profProfil.nom)}" placeholder="Nom">
-      </div>
-      <div class="field">
-        <label>Courriel institutionnel (La Cité) <span style="color:${window._profRosterLinked?'#22c55e':'#f59e0b'};font-size:10px;">${window._profRosterLinked?'✓ Lié':'⚠ À configurer'}</span></label>
-        <input id="pp-email" value="${esc(profProfil.email_cours||'')}" placeholder="prenom.nom@lacitec.on.ca" style="${window._profRosterLinked?'':'border-color:#f59e0b;'}">
-      </div>
-      <div class="field">
-        <label>Statut <span style="font-size:10px;color:var(--text-light);">(modifiable par l'admin)</span></label>
-        <input value="${st}" disabled style="opacity:.55;cursor:not-allowed;">
-      </div>
-      <div class="field">
-        <label>Numéro d'employé</label>
-        <input id="pp-employe" value="${esc(profProfil.numero_employe||'')}" placeholder="ex. 123456">
-      </div>
-      <div class="field">
-        <label>Téléphone</label>
-        <input id="pp-tel" value="${esc(profProfil.telephone||'')}" placeholder="ex. 613-742-2483">
-      </div>
-    </div>
-    <div style="margin-top:18px;">
-      <button class="btn btn-primary" onclick="sauvegarderProfil()">Sauvegarder mon profil</button>
-    </div>`;
-}
-
-async function sauvegarderProfil(){
-  if(!confirm('Confirmer la mise à jour de votre profil ?')) return;
-  const prenom        = document.getElementById('pp-prenom')?.value.trim() || '';
-  const nom           = document.getElementById('pp-nom')?.value.trim() || '';
-  const email_cours   = document.getElementById('pp-email')?.value.trim() || '';
-  const numero_employe = document.getElementById('pp-employe')?.value.trim() || '';
-  const telephone     = document.getElementById('pp-tel')?.value.trim() || '';
-  if(!prenom || !nom){ alert('Le prénom et le nom sont obligatoires.'); return; }
-  try {
-    const { error } = await sb.from('prof_profiles')
-      .update({ prenom, nom, email_cours, numero_employe, telephone })
-      .eq('user_id', currentUser.id);
-    if(error) throw error;
-    profProfil = { ...profProfil, prenom, nom, email_cours, numero_employe, telephone };
-    // Sync vers profs_roster pour que l'admin voie les données à jour
-    try {
-      const { data: rEntry } = await sb.from('profs_roster')
-        .select('id,user_id').ilike('email', email_cours).maybeSingle();
-      if(rEntry){
-        const rPayload = { prenom, nom, telephone, numero_employe, updated_at: new Date().toISOString() };
-        if(!rEntry.user_id) rPayload.user_id = currentUser.id;
-        await sb.from('profs_roster').update(rPayload).eq('id', rEntry.id);
-      }
-    } catch(syncErr){ console.warn('[sauvegarderProfil] sync roster:', syncErr); }
-    alert('Profil mis à jour.');
-  } catch(e){ alert('Erreur : '+(e.message||e)); }
-}
-
-async function renderProfDemandes(){
-  const el = document.getElementById('ep-demandes-content');
-  if(!el) return;
-  el.innerHTML='<p style="color:var(--text-light);font-size:13px;">Chargement…</p>';
-
-  let demandes = [];
-  try {
-    const { data } = await sb.from('cours_demandes').select('*').eq('prof_user_id', currentUser.id).order('created_at',{ascending:false});
-    demandes = data || [];
-  } catch(e){}
-
-  // Sélecteur de session (utilise la session active)
-  const sessionOpts = Object.entries(SESSIONS).map(([k,v])=>`<option value="${k}" ${k===sessionActive?'selected':''}>${v.label}</option>`).join('');
-
-  // Cours disponibles pour la session active (dédupliqués)
-  const seen = new Set();
-  const coursDispo = [];
-  COURS_BRUTS.filter(c=>c.session===sessionActive).forEach(c=>{
-    const key = c.numeroCours+'|'+c.nomCours;
-    if(!seen.has(key)){ seen.add(key); coursDispo.push(c); }
-  });
-
-  const dejaDemandesSession = demandes.filter(d=>d.session===sessionActive).map(d=>d.numero_cours+'|'+d.nom_cours);
-
-  let html = '';
-
-  if(demandes.length===0){
-    html += '<p class="admin-empty">Aucune demande soumise pour le moment.</p>';
-  } else {
-    html += '<div class="demandes-list">';
-    demandes.forEach(d=>{
-      const badge = d.statut==='en_attente' ? '<span class="statut-badge en_attente">⏳ En attente</span>'
-                  : d.statut==='accepte'    ? '<span class="statut-badge accepte">✅ Accepté</span>'
-                  :                           '<span class="statut-badge refuse">❌ Refusé</span>';
-      const note  = d.note_admin ? `<div style="font-size:11px;color:var(--text-light);margin-top:2px;">Note : ${esc(d.note_admin)}</div>` : '';
-      const del   = d.statut==='en_attente' ? `<button class="icon-btn icon-btn-danger" onclick="retirerDemande(${d.id})" title="Retirer">✕</button>` : '';
-      html += `<div class="demande-item">
-        <div class="demande-info">
-          <div class="demande-nom">${esc(d.nom_cours)}</div>
-          <div class="demande-meta">${esc(d.numero_cours)} · ${d.session==='A2026'?'Automne 2026':'Hiver 2027'}</div>
-          ${note}
-        </div>
-        <div class="demande-actions">${badge}${del}</div>
-      </div>`;
-    });
-    html += '</div>';
-  }
-
-  const opts = coursDispo.map(c=>{
-    const key = c.numeroCours+'|'+c.nomCours;
-    const deja = dejaDemandesSession.includes(key);
-    return `<option value="${esc(key)}" ${deja?'disabled':''}>${esc(c.nomCours)} (${esc(c.numeroCours)})${deja?' — déjà demandé':''}</option>`;
-  }).join('');
-
-  html += `<div class="demande-add-row">
-    <div class="field"><label>Session</label><select id="ep-demande-session" onchange="renderProfDemandes()">${sessionOpts}</select></div>
-    <div class="field" style="flex:2;"><label>Cours à demander</label><select id="ep-demande-cours">${opts||'<option disabled>Aucun cours disponible</option>'}</select></div>
-    <button class="btn btn-primary btn-sm" onclick="ajouterDemande()" style="flex-shrink:0;">+ Ajouter</button>
-  </div>`;
-
-  el.innerHTML = html;
-}
-
-async function ajouterDemande(){
-  const sessionEl = document.getElementById('ep-demande-session');
-  const coursEl   = document.getElementById('ep-demande-cours');
-  if(!coursEl || !coursEl.value) return;
-  const [numeroCours, nomCours] = coursEl.value.split('|');
-  const session = sessionEl ? sessionEl.value : sessionActive;
-  try {
-    const { error } = await sb.from('cours_demandes').insert({ prof_user_id:currentUser.id, numero_cours:numeroCours, nom_cours:nomCours, session, statut:'en_attente' });
-    if(error) throw error;
-    await renderProfDemandes();
-  } catch(e){ alert('Erreur : '+(e.message||e)); }
-}
-
-async function retirerDemande(id){
-  if(!confirm('Retirer cette demande ?')) return;
-  try { await sb.from('cours_demandes').delete().eq('id',id); await renderProfDemandes(); } catch(e){}
-}
-
-async function renderProfDispos(){
-  const el = document.getElementById('ep-dispos-content');
-  if(!el) return;
-
-  let dispos = [];
-  try {
-    const { data } = await sb.from('disponibilites').select('*').eq('prof_user_id',currentUser.id).eq('session',sessionActive);
-    dispos = data || [];
-  } catch(e){}
-
-  const fenetreOuverte = sessionActive==='A2026' ? dispoSettings?.a2026_ouverte : dispoSettings?.h2027_ouverte;
-  const messageFenetre = sessionActive==='A2026' ? dispoSettings?.a2026_message : dispoSettings?.h2027_message;
-
-  const PLAGES = [
-    { key:'matin',      label:'Matin',       sub:'9h – 12h' },
-    { key:'apres_midi', label:'Après-midi',  sub:'13h – 16h' },
-    { key:'soir',       label:'Soir',        sub:'16h – 19h' }
-  ];
-
-  const dispoMap = {};
-  dispos.forEach(d=>{ dispoMap[d.jour+'|'+d.plage]=d; });
-
-  const bannerHtml = fenetreOuverte
-    ? `<div class="dispo-fenetre-banner ouverte">✅ Fenêtre ouverte — disponibilités modifiables${messageFenetre?' · '+esc(messageFenetre):''}.</div>`
-    : `<div class="dispo-fenetre-banner fermee">🔒 Fenêtre fermée${dispos.length>0?' — vos disponibilités sont enregistrées.':' — disponible prochainement.'}</div>`;
-
-  const sessionOpts = Object.entries(SESSIONS).map(([k,v])=>`<option value="${k}" ${k===sessionActive?'selected':''}>${v.label}</option>`).join('');
-
-  let grille = '<div class="dispo-grid">';
-  grille += '<div class="dispo-corner"></div>';
-  JOURS.forEach(j=>{ grille += `<div class="dispo-head">${j.substring(0,3)}</div>`; });
-  PLAGES.forEach(p=>{
-    grille += `<div class="dispo-rowlabel">${p.label}<br><span style="font-size:9px;font-weight:400;">${p.sub}</span></div>`;
-    JOURS.forEach(j=>{
-      const d = dispoMap[j+'|'+p.key];
-      const sel = d?.disponible ? ' sel' : '';
-      const locked = !fenetreOuverte ? ' dispo-locked' : '';
-      grille += `<div class="dispo-cell${sel}${locked}" data-jour="${j}" data-plage="${p.key}" onclick="toggleDispoCell(this)"></div>`;
-    });
-  });
-  grille += '</div>';
-
-  let notesHtml = '<div class="dispo-day-notes">';
-  JOURS.forEach(j=>{
-    const anyDispo = dispoMap[j+'|matin'] || dispoMap[j+'|apres_midi'] || dispoMap[j+'|soir'];
-    const noteVal = anyDispo?.note || '';
-    notesHtml += `<div class="dispo-note-field">
-      <label>${j}</label>
-      <textarea id="dispo-note-${j}" rows="2" placeholder="Note spéciale…" ${!fenetreOuverte?'disabled':''} onchange="scheduleSaveDispo()">${esc(noteVal)}</textarea>
-    </div>`;
-  });
-  notesHtml += '</div>';
-
-  el.innerHTML = `
-    <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;">
-      <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);">Session</label>
-      <select style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-family:inherit;font-size:13px;color:var(--text-primary);" onchange="switchDispoSession(this.value)">${sessionOpts}</select>
-    </div>
-    ${bannerHtml}
-    ${grille}
-    ${notesHtml}
-    <div class="dispo-autosave" id="dispoAutosaveStatus"></div>`;
-}
-
-function switchDispoSession(session){
-  sessionActive = session;
-  document.getElementById('sessionSelect').value = session;
-  renderProfDispos();
-}
-
-function toggleDispoCell(el){
-  const fenetreOuverte = sessionActive==='A2026' ? dispoSettings?.a2026_ouverte : dispoSettings?.h2027_ouverte;
-  if(!fenetreOuverte) return;
-  el.classList.toggle('sel');
-  scheduleSaveDispo();
-}
-
-function scheduleSaveDispo(){
-  const s = document.getElementById('dispoAutosaveStatus');
-  if(s) s.textContent='⏳ Sauvegarde…';
-  clearTimeout(_dispoSaveTimer);
-  _dispoSaveTimer = setTimeout(saveProfDispos, 1200);
-}
-
-async function saveProfDispos(){
-  const s = document.getElementById('dispoAutosaveStatus');
-  const rows = [];
-  document.querySelectorAll('#ep-dispos-content .dispo-cell[data-jour]').forEach(cell=>{
-    const jour = cell.dataset.jour;
-    const plage = cell.dataset.plage;
-    const disponible = cell.classList.contains('sel');
-    const noteEl = document.getElementById('dispo-note-'+jour);
-    const note = noteEl ? noteEl.value.trim() : '';
-    rows.push({ prof_user_id:currentUser.id, session:sessionActive, jour, plage, disponible, note });
-  });
-  try {
-    for(const row of rows){
-      await sb.from('disponibilites').upsert(row, { onConflict:'prof_user_id,session,jour,plage' });
-    }
-    if(s){ s.textContent='✓ Sauvegardé'; setTimeout(()=>{ if(s) s.textContent=''; },2500); }
-  } catch(e){ if(s) s.textContent='⚠ Erreur de sauvegarde'; }
-}
-
-/* ============================================================
-   ADMIN — demandes de cours et paramètres fenêtre dispos
-   ============================================================ */
-
-async function chargerStatutsProfs(){
-  profStatuts = {};
-  if(!sb || !currentUser) return;
-  try {
-    const [{ data: demandes }, { data: dispos }, { data: profiles }] = await Promise.all([
-      sb.from('cours_demandes').select('prof_user_id').eq('statut','en_attente'),
-      sb.from('disponibilites').select('prof_user_id'),
-      sb.from('prof_profiles').select('user_id,email_cours')
-    ]);
-    const userIdsAvecDemande = new Set((demandes||[]).map(d=>d.prof_user_id));
-    const userIdsAvecDispo   = new Set((dispos||[]).map(d=>d.prof_user_id));
-    // Fallback : si profs_roster.user_id est NULL, chercher dans prof_profiles par email
-    const emailToUserId = {};
-    (profiles||[]).forEach(p=>{ if(p.email_cours) emailToUserId[p.email_cours.toLowerCase()] = p.user_id; });
-    (rosterProfs||[]).forEach(r=>{
-      if(!r.email) return;
-      const emailLc = r.email.toLowerCase();
-      const uid = r.user_id || emailToUserId[emailLc];
-      profStatuts[emailLc] = {
-        hasPendingRequest: uid ? userIdsAvecDemande.has(uid) : false,
-        hasDispo: uid ? userIdsAvecDispo.has(uid) : false
-      };
-    });
-  } catch(e){ console.warn('[chargerStatutsProfs]', e); }
-}
-
-async function chargerAdminSection(){
-  await chargerDispoSettings();
-  await Promise.all([chargerRoster(), chargerStatutsProfs()]);
-  renderProfs();
-  await renderAdminDemandes();
-  renderDispoSettingsAdmin();
-}
-
-async function renderAdminDemandes(){
-  const el    = document.getElementById('adminDemandesContainer');
-  const badge = document.getElementById('demandesBadge');
-  if(!el) return;
-
-  let demandes = [];
-  let profMap  = {};
-  try {
-    const { data, error } = await sb.from('cours_demandes')
-      .select('*').order('created_at',{ascending:false});
-    if(error) throw error;
-    demandes = data || [];
-    // Charger les profils séparément — pas de FK dans le schema cache Supabase
-    if(demandes.length > 0){
-      const ids = [...new Set(demandes.map(d=>d.prof_user_id).filter(Boolean))];
-      if(ids.length > 0){
-        const { data: profiles } = await sb.from('prof_profiles')
-          .select('user_id,nom,prenom,email_cours').in('user_id', ids);
-        (profiles||[]).forEach(p => profMap[p.user_id] = p);
-      }
-    }
-  } catch(e){ console.warn('[renderAdminDemandes]', e); }
-
-  const enAttente = demandes.filter(d=>d.statut==='en_attente').length;
-  if(badge){ badge.textContent=enAttente; badge.style.display=enAttente>0?'inline-flex':'none'; }
-  // Badge sur l'onglet Corps professoral
-  const tabProfs = document.querySelector('.tab[data-view="profs"]');
-  if(tabProfs){
-    let bt = tabProfs.querySelector('.tab-notif');
-    if(!bt){ bt=document.createElement('span'); bt.className='tab-notif'; tabProfs.appendChild(bt); }
-    bt.textContent=enAttente; bt.style.display=enAttente>0?'inline-flex':'none';
-  }
-
-  if(demandes.length===0){ el.innerHTML='<p class="admin-empty">Aucune demande soumise.</p>'; return; }
-
-  let html = '';
-  demandes.forEach(d=>{
-    const p = profMap[d.prof_user_id];
-    const pNom = p ? esc((p.prenom+' '+p.nom).trim()||p.email_cours) : '(profil non lié)';
-    const badge = d.statut==='en_attente' ? '<span class="statut-badge en_attente">⏳ En attente</span>'
-                : d.statut==='accepte'    ? '<span class="statut-badge accepte">✅ Accepté</span>'
-                :                           '<span class="statut-badge refuse">❌ Refusé</span>';
-    const actions = d.statut==='en_attente' ? `
-      <button class="btn btn-sm" style="background:rgba(76,175,80,.1);color:#2e7d32;border-color:rgba(76,175,80,.4);" onclick="traiterDemande(${d.id},'accepte','${d.prof_user_id}','${esc(d.numero_cours)}')">✓ Accepter</button>
-      <button class="btn btn-sm btn-danger" onclick="traiterDemande(${d.id},'refuse','${d.prof_user_id}','')">✕ Refuser</button>` : '';
-    html += `<div class="admin-demande-item">
-      <div class="admin-demande-info">
-        <div class="admin-demande-prof">${pNom}</div>
-        <div class="admin-demande-cours">${esc(d.nom_cours)} <span style="color:var(--text-light);font-size:12px;">(${esc(d.numero_cours)})</span></div>
-        <div class="admin-demande-meta">${d.session==='A2026'?'Automne 2026':'Hiver 2027'} · ${new Date(d.created_at).toLocaleDateString('fr-CA')}</div>
-        ${d.note_admin?`<div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Note : ${esc(d.note_admin)}</div>`:''}
-      </div>
-      <div class="admin-demande-actions">${badge}${actions}</div>
-    </div>`;
-  });
-  el.innerHTML = html;
-}
-
-async function traiterDemande(id, statut, profUserId, numeroCours){
-  let noteAdmin = '';
-  if(statut==='refuse'){
-    const r = prompt('Note pour le prof (optionnel) :');
-    if(r===null) return;
-    noteAdmin = r;
-  }
-  try {
-    await sb.from('cours_demandes').update({ statut, note_admin:noteAdmin, updated_at:new Date().toISOString() }).eq('id',id);
-    // Ajouter aux qualifications locales si accepté
-    if(statut==='accepte' && profUserId && numeroCours){
-      const rProf = rosterProfs.find(rr=>rr.user_id===profUserId);
-      if(rProf){
-        const profLocal = PROFS.find(p=>p.courriel && p.courriel.toLowerCase()===rProf.email.toLowerCase());
-        if(profLocal){
-          if(!profLocal.qualifications) profLocal.qualifications = [];
-          if(!profLocal.qualifications.includes(numeroCours)){
-            profLocal.qualifications.push(numeroCours);
-            sauvegarder();
-          }
-        }
-      }
-    }
-    await renderAdminDemandes();
-    await chargerStatutsProfs();
-    renderProfs();
-  } catch(e){ alert('Erreur : '+(e.message||e)); }
-}
-
-function renderDispoSettingsAdmin(){
-  const el = document.getElementById('dispoSettingsContainer');
-  if(!el || !dispoSettings) return;
-  const sessions = [
-    { key:'A2026', label:'Automne 2026', ouverteKey:'a2026_ouverte', msgKey:'a2026_message' },
-    { key:'H2027', label:'Hiver 2027',   ouverteKey:'h2027_ouverte', msgKey:'h2027_message' }
-  ];
-  let html = '<div class="dispo-settings-grid">';
-  sessions.forEach(s=>{
-    const ouverte = dispoSettings[s.ouverteKey];
-    html += `<div class="dispo-settings-card">
-      <div class="dispo-settings-session">${s.label}</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-        <span style="font-size:13px;font-weight:600;">Fenêtre de disponibilités</span>
-        <span class="dispo-settings-status ${ouverte?'open':'closed'}">${ouverte?'Ouverte':'Fermée'}</span>
-      </div>
-      <div class="field" style="margin:0;">
-        <label>Message aux profs (optionnel)</label>
-        <input id="dispo-msg-${s.key}" value="${esc(dispoSettings[s.msgKey]||'')}" placeholder="ex. Soumettez avant le 15 août">
-      </div>
-      <button class="btn ${ouverte?'btn-danger':'btn-primary'} btn-sm" onclick="toggleFenetreDispos('${s.key}',${!ouverte})">
-        ${ouverte?'🔒 Fermer la fenêtre':'🔓 Ouvrir la fenêtre'}
-      </button>
-    </div>`;
-  });
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-async function toggleFenetreDispos(session, ouverte){
-  const msgKey     = session==='A2026' ? 'a2026_message' : 'h2027_message';
-  const ouverteKey = session==='A2026' ? 'a2026_ouverte' : 'h2027_ouverte';
-  const msgEl = document.getElementById('dispo-msg-'+session);
-  const message = msgEl ? msgEl.value.trim() : '';
-  try {
-    const upd = { updated_at:new Date().toISOString() };
-    upd[ouverteKey]=ouverte; upd[msgKey]=message;
-    await sb.from('dispo_settings').update(upd).eq('id',1);
-    dispoSettings[ouverteKey]=ouverte; dispoSettings[msgKey]=message;
-    renderDispoSettingsAdmin();
-  } catch(e){ alert('Erreur : '+(e.message||e)); }
-}
-
 /* ---- Démarrage ---- */
-async function _initApp(){
-  if(!await chargerSauvegarde()){ chargerDonneesParDefaut(); }
-  majStatutSauvegarde(true);
-  const _c0 = detecterConflits(); _idsEnConflit = _c0.ids; _listeConflits = _c0.liste;
-  renderConflits(); renderChips(); renderSchedule();
-  renderLegend(); buildListe();
-  if(userRole === 'prof'){
-    await renderEspaceProf();
-    setActiveView('espace-prof');
-  } else {
-    renderProfs();
-    if(userRole === 'admin') chargerAdminSection().catch(console.error);
-  }
-  if(window.lucide) lucide.createIcons();
-}
-
-async function demarrer(sessionObj){
-  const sess = sessionObj || (await sb.auth.getSession()).data.session;
-  if(!sess){
-    document.getElementById('loginOverlay').classList.remove('hidden');
-    return;
-  }
-  currentUser = sess.user;
-  userRole    = await getUserRole(currentUser.id);
-  applyRoleUI();
-  document.getElementById('loginOverlay').classList.add('hidden');
-  await _initApp();
-}
-
-/* --- Connexion --- */
-document.getElementById('loginBtn').addEventListener('click', async ()=>{
-  const email = document.getElementById('loginEmail').value.trim();
-  const pwd   = document.getElementById('loginPassword').value;
-  const errEl = document.getElementById('loginErr');
-  errEl.classList.remove('show');
-  if(!email || !pwd){
-    errEl.textContent = 'Courriel et mot de passe requis.';
-    errEl.style.color = 'var(--loc-comodal)'; errEl.classList.add('show'); return;
-  }
-  errEl.textContent = 'Connexion en cours…';
-  errEl.style.color = 'var(--text-secondary)'; errEl.classList.add('show');
-  const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
-  if(error){
-    errEl.textContent = 'Identifiants invalides. Vérifiez votre courriel et mot de passe.';
-    errEl.style.color = 'var(--loc-comodal)'; return;
-  }
-  errEl.classList.remove('show');
-  const { data:{ session } } = await sb.auth.getSession();
-  demarrer(session).catch(console.error);
-});
-document.getElementById('loginPassword').addEventListener('keydown', e=>{
-  if(e.key==='Enter') document.getElementById('loginBtn').click();
-});
-
-/* --- Déconnexion --- */
-document.getElementById('logoutBtn').addEventListener('click', async ()=>{
-  await sb.auth.signOut();
-  currentUser = null; userRole = 'viewer'; profProfil = null; dispoSettings = null; profStatuts = {}; rosterProfs = [];
-  document.body.classList.remove('viewer-mode', 'prof-mode');
-  document.getElementById('loginOverlay').classList.remove('hidden');
-});
-
-/* --- Rafraîchissement token --- */
-sb.auth.onAuthStateChange((event)=>{
-  if(event === 'SIGNED_OUT'){
-    document.getElementById('loginOverlay').classList.remove('hidden');
-  }
-});
-
-demarrer().catch(console.error);
+// Charge la sauvegarde du navigateur si elle existe, sinon les données A2026 d'origine.
+if(!chargerSauvegarde()){ chargerDonneesParDefaut(); }
+majStatutSauvegarde(true);
+const _c0 = detecterConflits(); _idsEnConflit = _c0.ids; _listeConflits = _c0.liste;
+renderConflits();
+renderChips();
+renderSchedule();
+renderLegend();
+buildListe();
+renderProfs();
+if(window.lucide) lucide.createIcons();
 </script>
 </body>
 </html>
