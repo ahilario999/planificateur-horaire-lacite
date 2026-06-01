@@ -1307,7 +1307,7 @@ const LOCAUX_CONNUS = ['D2050','D2060','EN LIGNE','COMODAL']; // COMODAL demeure
 const MODES_CONNUS = ['Comodal','En ligne','Présentiel'];
 const DUREE_COURS = 3; // Automne : tous les cours durent 3 h. On ne choisit que l'heure de début.
 // Disponibilités : 3 demi-journées par jour. Donnée destinée au futur montage automatique.
-const PERIODES = [['AM','Avant-midi'],['PM','Après-midi'],['SOIR','Soir']];
+const PERIODES = [['matin','Avant-midi'],['apres_midi','Après-midi'],['soir','Soir']];
 // Bornes horaires de chaque demi-journée [début, fin[ — sert au conflit prof/disponibilité.
 const BORNES_PERIODE = { AM:[8,12], PM:[12,16], SOIR:[16,22] };
 const JOURS_ABBR = { Lundi:'Lun', Mardi:'Mar', Mercredi:'Mer', Jeudi:'Jeu', Vendredi:'Ven' };
@@ -2866,13 +2866,12 @@ function coursSessionDuProf(profId){
 
 function buildContractDispoMatrix(dispos){
   const set = new Set(Array.isArray(dispos) ? dispos : []);
-  const labels = { AM:'AM', PM:'PM', SOIR:'SOIR' };
   const fillSvg = '<svg class="contract-dispo-fill" viewBox="0 0 100 36" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect x="0" y="0" width="100" height="36" rx="3" ry="3" fill="#000"></rect></svg>';
   let html = '<div class="contract-dispo-matrix">';
   html += '<div class="contract-dispo-corner"></div>';
   html += JOURS.map(j=>'<div class="contract-dispo-head">'+esc(JOURS_ABBR[j]||j)+'</div>').join('');
   PERIODES.forEach(([code,label])=>{
-    html += '<div class="contract-dispo-rowlabel">'+esc(labels[code] || label)+'</div>';
+    html += '<div class="contract-dispo-rowlabel">'+esc(label)+'</div>';
     JOURS.forEach(j=>{
       const ok = set.has(j+'|'+code);
       html += '<div class="contract-dispo-cell '+(ok?'available':'unavailable')+'">'+(ok?fillSvg:'&nbsp;')+'</div>';
