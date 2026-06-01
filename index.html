@@ -3063,25 +3063,39 @@ let rosterProfs   = [];    // liste maître depuis profs_roster (Supabase)
 let _dispoSaveTimer = null;
 
 async function chargerProfProfil(){
+  window._profRosterLinked = false; // sera mis à true si le compte est lié au roster
   try {
     // 1. Chercher le profil existant
     const { data, error } = await sb.from('prof_profiles')
       .select('*').eq('user_id', currentUser.id).maybeSingle();
 
     if(data){
-      // Profil trouvé — auto-lier au roster si pas encore fait
       profProfil = data;
-      if(profProfil.email_cours){
+      // Auto-lier au roster via email_cours OU via email de connexion
+      const emailsToTry = [...new Set([
+        profProfil.email_cours, currentUser.email
+      ].filter(Boolean))];
+      for(const tryEmail of emailsToTry){
         const { data: rEntry } = await sb.from('profs_roster')
-          .select('id, user_id').ilike('email', profProfil.email_cours).maybeSingle();
-        if(rEntry && !rEntry.user_id){
-          await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
+          .select('id, user_id, email').ilike('email', tryEmail).maybeSingle();
+        if(rEntry){
+          window._profRosterLinked = true;
+          if(!rEntry.user_id){
+            await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
+          }
+          // Si email_cours ne pointait pas vers le bon courriel institutionnel, corriger
+          if(profProfil.email_cours.toLowerCase() !== rEntry.email.toLowerCase()){
+            await sb.from('prof_profiles')
+              .update({ email_cours: rEntry.email }).eq('user_id', currentUser.id);
+            profProfil.email_cours = rEntry.email;
+          }
+          break;
         }
       }
       return;
     }
 
-    // 2. Pas de profil — chercher dans profs_roster par email de connexion
+    // 2. Pas de profil — chercher dans profs_roster par email de connexion ou variantes
     const loginEmail = currentUser.email || '';
     const { data: rEntry } = await sb.from('profs_roster')
       .select('*').ilike('email', loginEmail).maybeSingle();
@@ -3110,6 +3124,7 @@ async function chargerProfProfil(){
     // 4. Lier le user_id dans profs_roster si pas encore fait
     if(rEntry && !rEntry.user_id){
       await sb.from('profs_roster').update({ user_id: currentUser.id }).eq('id', rEntry.id);
+      window._profRosterLinked = true;
     }
 
   } catch(e){
@@ -3137,7 +3152,20 @@ function renderProfProfil(){
   const el = document.getElementById('ep-profil-content');
   if(!profProfil){ el.innerHTML='<p class="admin-empty">Profil non trouvé. Contactez l\'administrateur.</p>'; return; }
   const st = profProfil.statut==='temps_plein' ? 'Temps plein' : 'Contractuel·le';
+  const linkBanner = window._profRosterLinked ? '' : `
+    <div style="background:rgba(255,160,0,.12);border:1px solid rgba(255,160,0,.4);border-radius:10px;padding:14px 16px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;">
+      <span style="font-size:18px;">⚠️</span>
+      <div>
+        <div style="font-weight:600;color:#b45309;margin-bottom:4px;">Compte non lié à la liste des profs</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">
+          Votre courriel de connexion <strong>${esc(currentUser?.email||'')}</strong> ne correspond à aucune entrée dans la liste.
+          Entrez votre <strong>courriel institutionnel La Cité</strong> dans le champ ci-dessous et sauvegardez —
+          le lien sera fait automatiquement et l'admin pourra voir vos disponibilités.
+        </div>
+      </div>
+    </div>`;
   el.innerHTML = `
+    ${linkBanner}
     <div class="ep-profil-grid">
       <div class="field">
         <label>Prénom</label>
@@ -3148,8 +3176,8 @@ function renderProfProfil(){
         <input id="pp-nom" value="${esc(profProfil.nom)}" placeholder="Nom">
       </div>
       <div class="field">
-        <label>Courriel</label>
-        <input id="pp-email" value="${esc(profProfil.email_cours||'')}" placeholder="prenom.nom@exemple.com">
+        <label>Courriel institutionnel (La Cité) <span style="color:${window._profRosterLinked?'#22c55e':'#f59e0b'};font-size:10px;">${window._profRosterLinked?'✓ Lié':'⚠ À configurer'}</span></label>
+        <input id="pp-email" value="${esc(profProfil.email_cours||'')}" placeholder="prenom.nom@lacitec.on.ca" style="${window._profRosterLinked?'':'border-color:#f59e0b;'}">
       </div>
       <div class="field">
         <label>Statut <span style="font-size:10px;color:var(--text-light);">(modifiable par l'admin)</span></label>
